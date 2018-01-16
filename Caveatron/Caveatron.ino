@@ -20,9 +20,9 @@ uint8_t lidarModuleType;
 
 String softwareVersion = "0.99";
 
-//#include <Eigen3210.h>     // Calls main Eigen matrix class library
-//#include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
-//using namespace Eigen;    // Eigen related statement; simplifies syntax for declaration of matrices
+#include <Eigen3210.h>     // Calls main Eigen matrix class library
+#include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
+using namespace Eigen;    // Eigen related statement; simplifies syntax for declaration of matrices
 
 #include <Wire.h>
 #include <UTFT.h>

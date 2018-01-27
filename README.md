@@ -6,8 +6,9 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 
 Version: 0.99
 
-Final beta version - Informal release for testing purposes only
-Remaining work: Complete testing of 25 m LIDAR module
+Final beta version - Informal release for testing purposes only.
+
+Remaining work: Complete testing of 25 m LIDAR module.
 
 Known bugs:
 - 25 m LIDAR occasionally fails to initialize.

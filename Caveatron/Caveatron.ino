@@ -1,13 +1,16 @@
+
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 0.99                             //
+//                       Version 0.98                             //
 /******************************************************************/
-// Joe Mitchell, 2018-01-02
+// Joe Mitchell, 2018-01-26
 
 // Change Notes:
-// Final pre-release version. 
+// Final beta version. 
 // Updated pins for LIDAR. 
 // Change calibration menu structure to place initial setup calibration routines in Advanced submenu
+// Modified user calibration to a two step process to accomidate large inital magnetic offsets
+// Increased number of user calibration points from 40 to 64
 // Changed icon locations to accomidate new FontIC
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
@@ -46,6 +49,9 @@ using namespace Eigen;    // Eigen related statement; simplifies syntax for decl
 #endif
 Caveatron_Hardware caveatron(&myGLCD, &myTouch);
 Caveatron_GUI ctGUI(&caveatron, &myGLCD, &myTouch);
+
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
 
 //Variables for GUI timer
 #define GUI_check_frequency 8
@@ -102,7 +108,7 @@ int currentMode=0;
 
 //Variables for GUI
 #define URNnull 0
-int pnlTitle, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, txtbox1, pbar1;
+int pnlTitle, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, txtbox1, pbar1, pbar2;
 extern uint8_t BigFont[];
 extern uint8_t SmallFont[];
 extern const int sin_table[];
@@ -145,6 +151,7 @@ int idx, LIDAROrientCal, LIDARDistCal;
 float ax, ay, az, rtilt;
 float distance, azimuth, inclination, roll, temperature;
 float accelCal[12], hardIronCal[3], softIronCal[9], mmAmp[4], mmOff[4];
+int16_t sphereCenter[3];
 int ztilt;
 boolean rightFlag = false;
 

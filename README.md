@@ -2,6 +2,18 @@
 
 The Caveatron is a unique compact, handheld, electronic device for mapping caves or other underground environments. It functions as a cave survey tool, recording conventional distance, azimuth and inclination measurements and can also go far beyond that with its integrated LIDAR to capture a full 3D scan of the cave interior. It greatly speeds up the cave survey process by recording station-to-station shots in just a few seconds and performs a station-to-station 3D scan traverse in less than a minute. The user can fully interact with the device and review data with the built-in touchscreen. A USB port provides access to the stored data from a PC or Mac and is also used to charge the integrated long-life battery pack. The station measurement file is compatible with Walls Cave Mapping Software and the LIDAR scan file can be quickly processed into a standard point cloud with custom-written software. The Caveatron is designed to be easily portable, lightweight, and low cost as well as water and dirt resistant and durable enough to survive regular use in a cave.
 
+## Release Notes
+
+Version: 0.99
+
+Final beta version - Informal release for testing purposes only
+Remaining work: Complete testing of 25 m LIDAR module
+
+Known bugs:
+- 25 m LIDAR occasionally fails to initialize.
+- In Room mode, if 25 m LIDAR fails to initialize, corrupted GUI screen appears
+- In Room mode, a successful scan will sometimes be marked as failed in the data file if a subsequent Room mode scan fails
+
 ## Instructions for setting up Arduino IDE to compile and install the Caveatron Software
 
 ### Install Arduino IDE

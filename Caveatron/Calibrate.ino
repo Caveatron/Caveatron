@@ -44,25 +44,53 @@ void CalibrateMenuHandler(int URN) {
 void CompassCalibrateSetup() {
   drawStatusBar("Compass Calibration");
   drawInfoBar("");
-  btn1 = ctGUI.addButton(20,124,280,220,GREEN_DRK,"START", "CALIBRATION", caveatron.FONT_28, optVisible, 1);
-  pbar1 = ctGUI.addProgressBar(20,300,280,40,40,"Points Collected", caveatron.FONT_22, WHITE_STD, optInvisible, 2);
+  btn1 = ctGUI.addButton(20,145,280,200,GREEN_DRK,"START", "CALIBRATION", caveatron.FONT_28, optVisible, 1);
+  pbar1 = ctGUI.addProgressBar(20,300,280,40,64,"Points Collected", caveatron.FONT_22, WHITE_STD, optInvisible, 2);
+  pbar2 = ctGUI.addProgressBar(20,300,280,40,4040,"Time Remaining", caveatron.FONT_22, WHITE_STD, optInvisible, 3);
+  btn4 = ctGUI.addButton(20,145,280,200,GREEN_DRK,"CONTINUE", "CALIBRATION", caveatron.FONT_28, optInvisible, 4);
   btn2 = ctGUI.addButton(20,364,130,84,RED_DRK,"CANCEL",caveatron.FONT_22, optVisible, 5);
   btn3 = ctGUI.addButton(170,364,130,84,BLUE_STD,"SAVE","& EXIT",caveatron.FONT_22, optInvisible, 6);
   myGLCD.setColor(YELLOW_STD);
   myGLCD.setBackColor(BLACK_STD);
-  ctGUI.print("Continuously rotate box to", 160, 22, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.print("all possible orientations", 160, 42, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.print("Short beep - start", 160, 62, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.print("Long beep - done", 160, 82, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("Step 1: Find Mag Center", 160, 30, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print("Continuously rotate box in", 160, 55, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("all possible orientations", 160, 75, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("to keep blue progress bar", 160, 95, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("full as long as possible", 160, 115, caveatron.FONT_19, 2, CENTER_J);
 }
 
 void CompassCalibrateHandler(int URN) {
     switch (URN) {
-      case 1:                            //Start Calibration
+      case 1:                            //Start Calibration - Step 1: Find approximate center of magnetic sphere
         ctGUI.makeObjectInvisible(btn1);
         ctGUI.makeObjectInvisible(btn2);    
+        //theFile.open("EIGDATA.TXT", O_RDWR | O_CREAT | O_AT_END);
+        //theFile.println("**********");theFile.println("NEW DATASET");
+        ctGUI.print("FINDING CENTER...", 160, 200, caveatron.FONT_34, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+        ctGUI.print("Center:", 20, 380, caveatron.FONT_19, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+        ctGUI.makeObjectVisible(pbar2);
+        Timer4.stop();
+        ctGUI.updateProgressBar(pbar2, 4000);
+        BuzzerBEEP(800, 200);
+        delay(1300);
+        FindMagSphereCenter();
         myGLCD.setColor(BLACK_STD);
-        myGLCD.fillRect(20,22,300,102);
+        myGLCD.fillRect(20,30,300,415);
+        ctGUI.makeObjectInvisible(pbar2);
+        ctGUI.makeObjectVisible(btn2);
+        ctGUI.makeObjectVisible(btn4);
+        myGLCD.setColor(YELLOW_STD);
+        myGLCD.setBackColor(BLACK_STD);
+        BuzzerBEEP(800, 200);
+        ctGUI.print("Step 2: Get Calibration Pts", 160, 30, caveatron.FONT_22, 2, CENTER_J);
+        ctGUI.print("Continuously rotate box in", 160, 55, caveatron.FONT_19, 2, CENTER_J);
+        ctGUI.print("all possible orientations", 160, 75, caveatron.FONT_19, 2, CENTER_J);
+        ctGUI.print("to fill blue progress bar", 160, 95, caveatron.FONT_19, 2, CENTER_J);
+        Timer4.start();
+        break;
+      case 4:                            //Continue Calibration - Step 2: Gather the hard and soft iron data, calculate the eigenvectors, and soft for the coefficients
+        ctGUI.makeObjectInvisible(btn4);   
+        ctGUI.makeObjectInvisible(btn2);  
         //theFile.open("EIGDATA.TXT", O_RDWR | O_CREAT | O_AT_END);
         //theFile.println("**********");theFile.println("NEW DATASET");
         ctGUI.print("CALIBRATING...", 160, 200, caveatron.FONT_34, 3, CENTER_J, YELLOW_STD, BLACK_STD);
@@ -71,10 +99,10 @@ void CompassCalibrateHandler(int URN) {
         BuzzerBEEP(800, 200);
         delay(1300);
         EigenCalibration();
+        myGLCD.setColor(BLACK_STD);
+        myGLCD.fillRect(20,30,300,235);
         ctGUI.makeObjectVisible(btn2);
         ctGUI.makeObjectVisible(btn3);
-        myGLCD.setColor(0,0,0);
-        myGLCD.fillRect(20,200,300,235);
         myGLCD.setBackColor(BLACK_STD);
         myGLCD.setColor(YELLOW_STD);
         ctGUI.print("Hard Iron Calibration", 160, 40, caveatron.FONT_22, 2, CENTER_J);
@@ -108,22 +136,63 @@ void CompassCalibrateHandler(int URN) {
   }
 }
 
+
+//FIND CENTER OF MAGNETIC SPHERE FOR HARD AND SOFT IRON CALIBRATION
+void FindMagSphereCenter() {
+  int16_t running_min[3] = {32767, 32767, 32767}, running_max[3] = {-32768, -32768, -32768}, running_center[3] = {0, 0, 0}, last_running_center[3] = {0, 0, 0};
+  int lastChangeTime = millis();
+
+  //Look for new min and max magnetic values. If more than 4 sec since last new min and max, end collection
+  while ((millis() - lastChangeTime) < 4000) {
+    caveatron.IMU_Read();
+    
+    running_min[0] = min(running_min[0], caveatron.IMU_m_x);
+    running_min[1] = min(running_min[1], caveatron.IMU_m_y);
+    running_min[2] = min(running_min[2], caveatron.IMU_m_z);
+  
+    running_max[0] = max(running_max[0], caveatron.IMU_m_x);
+    running_max[1] = max(running_max[1], caveatron.IMU_m_y);
+    running_max[2] = max(running_max[2], caveatron.IMU_m_z);
+
+    //Update x,y,z center estimate from min and max
+    for (int i=0; i<3; i++) {
+      last_running_center[i] = running_center[i];  
+      running_center[i] = running_max[i] - ((running_max[i]-running_min[i])/2);
+      ctGUI.printNumI(running_center[i], 100+75*i, 380, caveatron.FONT_19, 2, LEFT_J, WHITE_STD, BLACK_STD);
+    }
+
+    //Check for change in center values since last reading and if so, reset time counter
+    if ((running_center[0] != last_running_center[0]) || (running_center[1] != last_running_center[1]) || (running_center[2] != last_running_center[2])) {
+      lastChangeTime = millis();
+    }
+    ctGUI.updateProgressBar(pbar2, 4000-(millis()-lastChangeTime));
+  }
+
+  for (int i=0; i<3; i++) sphereCenter[i] = running_center[i];
+}
+
+
 //HARD AND SOFT IRON CALIBRATION ROUTINE
 void EigenCalibration() { 
   int calNumCount=0;
-  int combo, XAxis, YAxis, ZAxis;
+  int combo=-1, combo_sector=-1, XAxis, YAxis, ZAxis;
   int s=1000;
   float p;
-  
-  int reject = 2;
-  int spherePosCount[8];
-  for(int i=0;i<8;i++) spherePosCount[i]=5;
+
+  int sphereSectorCount[8];
+  for(int i=0;i<8;i++) sphereSectorCount[i]=8;
+  /*int sphereSectorCount[8][4];
+  for(int i=0;i<8;i++) for(int j=0;j<4;j++) sphereSectorCount[i][j]=2;*/
   
   //Initialize Matrices
-    ArrayXf x(40,1);
+    ArrayXf x(64,1);
+    ArrayXf y(64,1);
+    ArrayXf z(64,1);
+    MatrixXf D(64,9);
+    /*ArrayXf x(40,1);
     ArrayXf y(40,1);
     ArrayXf z(40,1);
-    MatrixXf D(40,9);
+    MatrixXf D(40,9);*/
     MatrixXf VA(9,9);
     MatrixXf VB(9,1);
     MatrixXf V(9,1);
@@ -140,39 +209,64 @@ void EigenCalibration() {
     MatrixXf SOFTIRON(3,3);
    
   // Find points around sphere and load array for calibration
-  while	(calNumCount<40) {
+  // The objective is to obtain a roughly equal distribution of points around the magnetic sphere
+  while	(calNumCount<64) {
+  //while (calNumCount<40) {
 
-    delay(270);
+    delay(200);
     caveatron.IMU_Read();
     XAxis = caveatron.IMU_m_x;	
     YAxis = caveatron.IMU_m_y;
     ZAxis = caveatron.IMU_m_z;
 
-    if ((XAxis > reject) && (YAxis > reject) && (ZAxis > reject)) combo = 0; 
-    if ((XAxis > reject) && (YAxis > reject) && (ZAxis < -reject)) combo = 1; 
-    if ((XAxis > reject) && (YAxis < -reject) && (ZAxis > reject)) combo = 2; 
-    if ((XAxis > reject) && (YAxis < -reject) && (ZAxis < -reject)) combo = 3; 
-    if ((XAxis < -reject) && (YAxis > reject) && (ZAxis > reject)) combo = 4; 
-    if ((XAxis < -reject) && (YAxis > reject) && (ZAxis < -reject)) combo = 5;
-    if ((XAxis < -reject) && (YAxis < -reject) && (ZAxis > reject)) combo = 6;
-    if ((XAxis < -reject) && (YAxis < -reject) && (ZAxis < -reject)) combo = 7;
+    //Subdivide sphere into 8 quadrants and detemine which quadrant new point falls within 
+    if ((XAxis > sphereCenter[0]) && (YAxis > sphereCenter[1]) && (ZAxis > sphereCenter[2])) combo = 0; 
+    if ((XAxis > sphereCenter[0]) && (YAxis > sphereCenter[1]) && (ZAxis < sphereCenter[2])) combo = 1; 
+    if ((XAxis > sphereCenter[0]) && (YAxis < sphereCenter[1]) && (ZAxis > sphereCenter[2])) combo = 2; 
+    if ((XAxis > sphereCenter[0]) && (YAxis < sphereCenter[1]) && (ZAxis < sphereCenter[2])) combo = 3; 
+    if ((XAxis < sphereCenter[0]) && (YAxis > sphereCenter[1]) && (ZAxis > sphereCenter[2])) combo = 4; 
+    if ((XAxis < sphereCenter[0]) && (YAxis > sphereCenter[1]) && (ZAxis < sphereCenter[2])) combo = 5;
+    if ((XAxis < sphereCenter[0]) && (YAxis < sphereCenter[1]) && (ZAxis > sphereCenter[2])) combo = 6;
+    if ((XAxis < sphereCenter[0]) && (YAxis < sphereCenter[1]) && (ZAxis < sphereCenter[2])) combo = 7;
 
-    // Bad data filter - reject out of bounds - use sum of absolutes - similiar filter but less intensive then sqrt of sqrs	
-    // Set bounds for different compass modules 
-    int Hyp =  sqrt(ZAxis*ZAxis + YAxis*YAxis + XAxis*XAxis);
+    //Subdivide each quadrant into 4 sectors and determine which sector the point falls within
+    if (XAxis > YAxis) {
+        if (ZAxis > XAxis) combo_sector = 1;
+        else combo_sector = 0;
+      } else {
+        if (ZAxis > YAxis) combo_sector = 3;
+        else combo_sector = 2;
+      }
+
+    // Bad data filter - reject out of bounds (not used at this time)
+    /*int Hyp =  sqrt(ZAxis*ZAxis + YAxis*YAxis + XAxis*XAxis);
     if ( (Hyp > (caveatron.IMU_hypmax)) || (Hyp < (caveatron.IMU_hypmin)) ) combo =-1;
-    if ( (abs(XAxis) > caveatron.IMU_hypUbound) || (abs(YAxis) > caveatron.IMU_hypUbound) || (abs(ZAxis) > caveatron.IMU_hypUbound)) combo =-1;
-    if (combo>=0) {
-      if (spherePosCount[combo]>0) {
+    if ( (abs(XAxis) > caveatron.IMU_hypUbound) || (abs(YAxis) > caveatron.IMU_hypUbound) || (abs(ZAxis) > caveatron.IMU_hypUbound)) combo =-1;*/
+    
+    //We want to get 8 points within each quadrant for 64 total points
+    
+    //Optional approach for getting finer point distribution by subdividing each quandrant into 4 sector
+    /*if ((combo>=0)&&(combo_sector>=0)) {
+      if (sphereSectorCount[combo][combo_sector]>0) {
         x(calNumCount) = XAxis; y(calNumCount) = YAxis; z(calNumCount) = ZAxis;
         //theFile.print(XAxis);theFile.print("\t");theFile.print(YAxis);theFile.print("\t");theFile.println(ZAxis);
-        spherePosCount[combo]--;
+        sphereSectorCount[combo][combo_sector]--;
+        calNumCount++;
+        ctGUI.updateProgressBar(pbar1, calNumCount);
+      }
+    }*/
+    if (combo>=0) {
+      if (sphereSectorCount[combo]>0) {
+        x(calNumCount) = XAxis; y(calNumCount) = YAxis; z(calNumCount) = ZAxis;
+        //theFile.print(XAxis);theFile.print("\t");theFile.print(YAxis);theFile.print("\t");theFile.println(ZAxis);
+        sphereSectorCount[combo]--;
         calNumCount++;
         ctGUI.updateProgressBar(pbar1, calNumCount);
       }
     }
   }
 
+  // Perform the eigenvector computation
   D << x * x,
           y * y,
           z * z,
@@ -185,7 +279,7 @@ void EigenCalibration() {
 
   D = D/s;
   VA = ( D.transpose() * D ); 
-  VB = ( D.transpose() * VectorXf::Ones(40));
+  VB = ( D.transpose() * VectorXf::Ones(64));
   
   
   V = VA.lu().solve(VB);
@@ -263,11 +357,11 @@ void ViewCalParameters() {
 
 void AdvancedCalMenuSetup() {
   drawStatusBar("Advanced Calibration");
-  drawInfoBar("");
-  btn1 = ctGUI.addButton(10,30,300,80,BLACK_STD, "Record 1000 Raw Mag & Acc Points", "For Accelometer Calibration",caveatron.FONT_19,optVisible,1);
-  btn2 = ctGUI.addButton(10,120,300,80,BLACK_STD,"Record Continuous Raw Mag & Acc",caveatron.FONT_19,optVisible,2);
-  btn3 = ctGUI.addButton(10,210,300,80,BLACK_STD,"Take Uncorrected Compass Shots", "For Mag Alignment Calibration", caveatron.FONT_19,optVisible,3);
-  ctGUI.addButton(10,390,300,64,BLUE_STD,"RETURN TO SETTINGS",caveatron.FONT_28,optVisible,5);
+  drawInfoBar("Data Recording Functions");
+  btn1 = ctGUI.addButton(5,30,310,80,BLACK_STD, "1000 Raw Mag & Acc Points", "For Accelometer Calibration",caveatron.FONT_19,optVisible,1);
+  btn2 = ctGUI.addButton(5,120,310,80,BLACK_STD,"Continuous Raw Mag & Acc", caveatron.FONT_19,optVisible,2);
+  btn3 = ctGUI.addButton(5,210,310,80,BLACK_STD,"Uncorrected Compass Shots", "For Mag Alignment Calibration", caveatron.FONT_19,optVisible,3);
+  ctGUI.addButton(5,390,310,64,BLUE_STD,"RETURN TO SETTINGS",caveatron.FONT_28,optVisible,5);
   SetupRawDisplay();
 }
 
@@ -633,10 +727,10 @@ void SaveCalibration() {
   if (LIDARModule) {
     switch (lidarModuleType) {
       case 1:
-        addrMagHSCal = ADDR_MAG_ALIGNCAL_LIDXV;
+        addrMagHSCal = ADDR_MAG_HSCAL_LIDXV;
         break;
       case 2:
-        addrMagHSCal = ADDR_MAG_ALIGNCAL_LIDSW;
+        addrMagHSCal = ADDR_MAG_HSCAL_LIDSW;
         break;
     }
   } else addrMagHSCal = ADDR_MAG_HSCAL_NOLID;

@@ -799,8 +799,10 @@ void Caveatron_GUI::drawProgressBar(int objectNumber){
     print(GUIobject_text[objectNumber],GUIobject_x[objectNumber],GUIobject_y[objectNumber]-font_height-5,GUIobject_font[objectNumber], 2, LEFT_J, GUIobject_textcolour[objectNumber], BLACK_STD);
 	
 	int progressbarpercent = 100*GUIobject_progressbarfill[objectNumber]/GUIobject_data6[objectNumber];
-	String progressbarpercentvalue = String(progressbarpercent)+" %";
+	String progressbarpercentvalue = "   "+String(progressbarpercent)+" %";
 	if ((progressbarpercent < 100) && (progressbarpercent > 0)) {
+		mylcd->setColor(BLACK_STD);
+		mylcd->fillRect(GUIobject_x[objectNumber]+2+(progressbarpercent*(GUIobject_xs[objectNumber]-4)/100), GUIobject_y[objectNumber]+2, GUIobject_x[objectNumber]+GUIobject_xs[objectNumber]-2, GUIobject_y[objectNumber]+GUIobject_ys[objectNumber]-2);
 		mylcd->setColor(BLUE_BAR);
 		mylcd->fillRect(GUIobject_x[objectNumber]+2,GUIobject_y[objectNumber]+2,GUIobject_x[objectNumber]+2+(progressbarpercent*(GUIobject_xs[objectNumber]-4)/100), GUIobject_y[objectNumber]+GUIobject_ys[objectNumber]-2);
 		print(progressbarpercentvalue,GUIobject_x[objectNumber]+GUIobject_xs[objectNumber],GUIobject_y[objectNumber]-font_height-5,GUIobject_font[objectNumber], 2, RIGHT_J, BLUE_BAR, BLACK_STD);

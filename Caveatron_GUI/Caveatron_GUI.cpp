@@ -1,8 +1,8 @@
 /*
   Caveatron_GUI.cpp 
-  Version 0.95a
+  Version 0.99
   Joe Mitchell
-  2017-10-17
+  2018-01-25
   
   This library contains the functions related to the Caveatron GUI including creating standard user interface controls and displays, and printing text.
   The library also has functions to handle general GUI operations such as setting/clearing displays of GUI object and setting GUI object parameters.

@@ -1,10 +1,10 @@
 /*
-  Caveatron_Hardware.h
-  Version 0.95
+  Caveatron_Hardware.h 
+  Version 1.0
   Joe Mitchell
-  2017-12-20
-
-  This library contains all functions to interface between the main code and the hardware used for the Caveatron.
+  2018-02-26
+  
+  This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
 */
 
@@ -15,7 +15,7 @@
 #include <UTFT.h>
 #include <URTouch.h>
 #include <UTFT_CTE.h>
-//#include <UTFT_GHL.h>
+#include <UTFT_GHL.h>
 
 #include <LSM303.h>
 #include <MAX17043.h>
@@ -39,27 +39,25 @@
 #define ADDR_MAG_HSCAL_LIDSW  0x660     //Uses 4 pages
 #define ADDR_LIDXV_ORIENTCAL   0x820     //Uses 1 page
 #define ADDR_LIDSW_ORIENTCAL   0x840     //Uses 1 page
-#define ADDR_LIDXV_DISTCAL   0x900     //Uses 1 page
-#define ADDR_LIDSW_DISTCAL   0x920     //Uses 1 page
-#define ADDR_LRF_RANGECAL   0x960     //Uses 1 page
+#define ADDR_LRF_RANGECAL   0x880     //Uses 1 page
 
 
 class Caveatron_Hardware
 {
 	public:
-		Caveatron_Hardware(UTFT * lcd, URTouch * touch);
+		Caveatron_Hardware(UTFT * lcd, URTouch * touch);		
 
 		// Hardware Initialization
 		void Init();
 		void Init(char hRev, char hCode[]);
-
+		
 		// TFT Touchscreen Display Functions
 		void LCD_Init();
 		void LCD_PrintText(String st, int x, int y, int font_number);
 		void LCD_SetTextSpacing(int font_spacing);
 		int LCD_GetTextLength(String st, int font_number);
 		void LCD_ShowImage(int x, int y, int addr);
-
+				
 		// LRF Functions
 		void LRF_Init();
 		void LRF_PowerOn();
@@ -70,47 +68,49 @@ class Caveatron_Hardware
 		void LRF_Fire();
 		uint8_t LRF_Read();
 		uint8_t LRF_GetRange();
-
+		
 		// LRF Configuration Functions
 		void LIDAR_Init(uint8_t lidarType);
-
+		
 		// IMU Compass Functions
 		void IMU_Init();
 		void IMU_Read();
-
+		
 		// 	Battery Monitor Functions
 		void BATT_Init();
 		unsigned int BATT_GetLevel();
+		unsigned int BATT_GetSOC();
+		unsigned int BATT_GetVolts();
 
 		// 	Clock and Temperature Functions
 		void RTC_GetDateTime();
 		void RTC_SetDateTime(int nYear, int nMonth, int nDay, int nHour, int nMinute);
 		float RTC_GetTemperature();
-
+		
 		// 	Piezo Buzzer Functions
 		void BUZZ_Init();
-
+		
 		// 	Storage Functions
 		void SD_Init();
-
+		
 		// 	EEPROM Functions
 		void EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues);
 		float EEPROM_readFloat(uint16_t address);
 		String EEPROM_readCharArray(uint16_t address, int numvalues);
-
-
+		
+		
 		//Font definition variables
-		int FONT_13;
-		int FONT_15;
-		int FONT_19;
-		int FONT_22;
-		int FONT_28;
-		int FONT_34;
-		int FONT_43;
-		int FONT_52;
-		int FONT_74;
+		int FONT_13;										 
+		int FONT_15;										 
+		int FONT_19;											 
+		int FONT_22;											 
+		int FONT_28;											 
+		int FONT_34;											 
+		int FONT_43;											 
+		int FONT_52;											 
+		int FONT_74;											 
 		int FONT_112;
-
+		
 		//Icon and Graphic address variables
 		int iSHOT;
 		int iPASSAGE;
@@ -125,7 +125,7 @@ class Caveatron_Hardware
 		int iABOUT;
 		int iRETURN;
 		int gLOGO;
-
+		
 		// Hardware variables
         float LRFdistance; //Distance in m
 		int LRFtimeout;	//Time to LRF time out in msec
@@ -137,7 +137,7 @@ class Caveatron_Hardware
 		float boxRearDist, boxLeftDist, boxRightDist, boxBaseDist; //Distances from LRF measurement point to edges of the enclosure
 		int RTCsecond, RTCminute, RTChour, RTCday, RTCmonth, RTCyear;
 		uint8_t BUZZpin, SD_CSpin, SPIspeed;
-
+		
 		String serialNumber;
 
 	private:
@@ -147,7 +147,7 @@ class Caveatron_Hardware
 		byte decToBcd(byte val);
 		void Write_AT24Cxx_Page(int iAddr, byte* iData, int iLength);
 		int Read_AT24Cxx_Byte(int iAddr);
-
+	
 		// Hardware variables
         char hardwareRev;
 		char sdType;
@@ -161,18 +161,18 @@ class Caveatron_Hardware
 		char clockType;
 		char buzzerType;
 		char wirelessType;
-
+		
 		uint8_t LRFPowerPin;
 		uint8_t LRFOnPin;
 		float LRFminRange;
 		float LRFmaxRange;
 		boolean LRFmode;
 		int LRFstartTime;
-
-
+		
+		
 		unsigned int BATTERY_CAPACITY;
 		unsigned int CUTOFF_VOLTAGE;
-
+	
 
 	protected:
 		UTFT    * mylcd;

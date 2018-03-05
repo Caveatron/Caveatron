@@ -360,11 +360,6 @@ void DrawRightArrow() {
 //Setup screen for initiating Passage mode scan
 void PassageModeSetup() {
   caveatron.LRF_PowerOn();
-  if (lidarModuleType==2) {
-    digitalWrite(LIDARPowerPin, HIGH);
-    delay(100);
-    device.reset();
-  }
   drawStatusBar("PASSAGE MODE");
   drawInfoBar("Align laser to station");
   btn1 = ctGUI.addButton(15, 70, 290, 272, GREEN_DRK, "START", "TRAVERSE", caveatron.FONT_34, optVisible, 1);
@@ -376,10 +371,8 @@ void PassageModeSetup() {
 
   ctGUI.print("Traverse:", 15, 35, caveatron.FONT_28, 2, LEFT_J, YELLOW_STD, BLACK_STD);
   ctGUI.print(traverseTo + " / #" + traverseNum, 304, 35, caveatron.FONT_28, 2, RIGHT_J, WHITE_STD, BLACK_STD);
-
-  delay(250);
  
-  if (lidarModuleType==2) InitializeLIDAR_SWEEP();
+  InitializeLIDAR();
   caveatron.LRF_LaserOn();
   laserFlag = true;
 }
@@ -399,7 +392,7 @@ void PassageModeHandler(int URN) {
     case 2:                            //Cancel
       caveatron.LRF_LaserOff();
       caveatron.LRF_PowerOff();
-      digitalWrite(LIDARPowerPin, LOW);
+      CloseLIDAR();
       laserFlag = false;
       LRFFlag = false;
       CloseSurveyFiles();
@@ -472,7 +465,7 @@ void RoomModeHandler(int URN) {
     case 2:                            //Cancel
       caveatron.LRF_LaserOff();
       caveatron.LRF_PowerOff();
-      digitalWrite(LIDARPowerPin, LOW);
+      CloseLIDAR();
       laserFlag = false;
       LRFFlag = false;
       CloseSurveyFiles();
@@ -504,10 +497,9 @@ void RoomModeHandler(int URN) {
         ctGUI.print("splay shot", 160, 400, caveatron.FONT_28, 2, CENTER_J, YELLOW_STD, BLACK_STD);
         boolean splayResult = TakeSplayShot();
         if (splayResult==true) {
-          //ctGUI.makeObjectVisible(btn1);
           myGLCD.setColor(BLACK_STD);
           myGLCD.fillRect(15, 367, 305, 451);
-          ctGUI.makeObjectVisible(btn2);
+          if (!InitializeLIDAR()) return;
           drawInfoBar("Rotate box over splay point");
           ctGUI.print("Scans to left side", 305, 73, caveatron.FONT_22, 2, RIGHT_J, YELLOW_STD, BLACK_STD);
           myGLCD.drawLine(15,82,90,82);
@@ -516,13 +508,7 @@ void RoomModeHandler(int URN) {
           myGLCD.drawLine(15,83,30,74);
           myGLCD.drawLine(15,82,30,91);
           myGLCD.drawLine(15,83,30,92);
-          if (lidarModuleType==2) {
-            digitalWrite(LIDARPowerPin, HIGH);
-            delay(100);
-            device.reset();
-            delay(250);
-            InitializeLIDAR_SWEEP();
-          }
+          ctGUI.makeObjectVisible(btn2);
           ctGUI.makeObjectVisible(btn1);
         }
       }
@@ -537,7 +523,7 @@ void RoomModeHandler(int URN) {
         caveatron.LRF_PowerOff();
         myGLCD.setColor(BLACK_STD);
         myGLCD.fillRect(15, 367, 305, 451);
-        ctGUI.makeObjectVisible(btn2);
+        if (!InitializeLIDAR()) return;
         drawInfoBar("Rotate box over splay point");
         ctGUI.print("Scans to left side", 305, 73, caveatron.FONT_22, 2, RIGHT_J, YELLOW_STD, BLACK_STD);
         myGLCD.drawLine(15,82,90,82);
@@ -546,13 +532,7 @@ void RoomModeHandler(int URN) {
         myGLCD.drawLine(15,83,30,74);
         myGLCD.drawLine(15,82,30,91);
         myGLCD.drawLine(15,83,30,92);
-        if (lidarModuleType==2) {
-          digitalWrite(LIDARPowerPin, HIGH);
-          delay(100);
-          device.reset();
-          delay(250);
-          InitializeLIDAR_SWEEP();
-        }
+        ctGUI.makeObjectVisible(btn2);
         ctGUI.makeObjectVisible(btn1);
       }
       break;

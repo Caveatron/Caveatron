@@ -1,17 +1,19 @@
 
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 0.99                             //
+//                       Version 1.00                             //
 /******************************************************************/
-// Joe Mitchell, 2018-01-26
+// Joe Mitchell, 2018-03-04
 
 // Change Notes:
-// Final beta version. 
-// Updated pins for LIDAR. 
-// Change calibration menu structure to place initial setup calibration routines in Advanced submenu
-// Modified user calibration to a two step process to accomidate large inital magnetic offsets
-// Increased number of user calibration points from 40 to 64
-// Changed icon locations to accomidate new FontIC
+// Initial public release. 
+// Fixed bug that resulted in peiodic SWEEP LIDAR initialization failure.
+// Fixed bug that could cause LIDAR data loss if settings file becomes corrupted.
+// Added error checking to detect if setting file becomes corrupted.
+// Fixed problems with failed LIDAR condition screen display.
+// Added LIDAR type to each scan in CVL file.
+// Added custom battery level computation for MAX17043 to Caveatron Hardware library.
+// Added ability to load test calibration pararmeters directly for setup and testing. 
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
 #define AUTO_CONFIG 1
@@ -21,7 +23,7 @@ char hardwareRev = 'A';
 char hardwareCode[] = "11121011110";
 uint8_t lidarModuleType;
 
-String softwareVersion = "0.99";
+String softwareVersion = "1.00";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
@@ -119,6 +121,7 @@ int numOfKeys;
 boolean pageLtrKey = false;
 boolean shotFlag = false;
 boolean holdFlag = false;
+boolean errorFlag = false;
 
 //Variables for LCD Screen calibration
 unsigned long screenCal[3];
@@ -145,7 +148,7 @@ int lidarPacket[4][3];
 int angle, lastangle, rot_count, pos_count, data_count, save_count, LIDARstartTime, LIDAR_LRF_Freq;
 float lastLIDARdistance, lastLIDARazi, lastLIDARinc, initLIDARdistance;
 boolean lidarErrorFlag = false;
-int idx, LIDAROrientCal, LIDARDistCal;
+int idx, LIDAROrientCal;
 
 //Variables for Measurement
 float ax, ay, az, rtilt;
@@ -217,7 +220,7 @@ void setup() {
   
   //Setup Serial
   Serial.begin(250000);
-  Serial2.begin(115200);
+  //Serial2.begin(115200);
 
   //Init SPI
   Wire.begin();
@@ -236,12 +239,15 @@ void setup() {
 
   if (LIDARModule==true) digitalWrite(LIDARPowerPin, HIGH);
 
-  //Read Calibration Parameters
-  LoadCalibrationParameters();
-
-  //Set Hardware Version Specific Parameters
-  if (AUTO_CONFIG==1) caveatron.Init();
-  else caveatron.Init(hardwareRev, hardwareCode);
+  //Set Calibration Parameters and Hardware Version Specific Settings
+  if (AUTO_CONFIG==1) {
+    LoadCalibrationParameters();
+    caveatron.Init();
+  }
+  else {
+    LoadTestCalibrationParameters();
+    caveatron.Init(hardwareRev, hardwareCode);
+  }
   
   //Setup SD card
   caveatron.SD_Init();

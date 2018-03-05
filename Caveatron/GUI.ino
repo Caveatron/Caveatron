@@ -13,7 +13,7 @@ void drawStatusBar(String textStatusBar) {
   GetCurrentTime();
   unsigned int battLevel = caveatron.BATT_GetLevel();
   //Draw battery indicator
-  if (battLevel <= 2) myGLCD.setColor(RED_STD); //if 2% or less draw battery outline in red
+  if (battLevel <= 3) myGLCD.setColor(RED_STD); //if 2% or less draw battery outline in red
   else myGLCD.setColor(WHITE_STD);
   myGLCD.drawRect(279, 2, 305, 16); //draw battery body
   myGLCD.fillRect(306, 5, 309, 13); // draw battery tip
@@ -23,7 +23,7 @@ void drawStatusBar(String textStatusBar) {
   if (battLevel < 15) myGLCD.setColor(RED_STD);
   else myGLCD.setColor(GREEN_STD);
   if (battLevel>=100) myGLCD.fillRect(280, 3, 304, 15); //Account for 100% battery not overfilling rect
-  else myGLCD.fillRect(280, 3, 280+(battLevel/4), 15);
+  else myGLCD.fillRect(280, 3, 280+(0.5+float(battLevel)/4), 15);
   //ctGUI.printNumI(battLevel, 280, 0, caveatron.FONT_19, 1, LEFT_J, WHITE_STD, BLACK_STD);
   //Draw time
   String timeString = timeHour + ":" + timeMinute;
@@ -390,6 +390,7 @@ void FileNameEntryHandler(int URN) {
 //
 
 void ErrorBox(char msgStr1[], char msgStr2[], char msgStr3[], int resetType) {
+  CloseSurveyFiles();
   myGLCD.setColor(255, 255, 128);
   myGLCD.setBackColor(255, 255, 128);
   myGLCD.fillRect(30, 80, 290, 400);
@@ -398,13 +399,20 @@ void ErrorBox(char msgStr1[], char msgStr2[], char msgStr3[], int resetType) {
   myGLCD.print("ERROR!", CENTER, 100);
   myGLCD.print(msgStr1, CENTER, 150); myGLCD.print(msgStr2, CENTER, 180); myGLCD.print(msgStr3, CENTER, 210);
   ctGUI.addButton(100,280,120,80,BLUE_STD,"OK",caveatron.FONT_28,optVisible,resetType);
+  while (errorFlag==true) delay(10);
 }
 
 void ErrorBoxHandler(int resetType) {
-  if (resetType==99) {                              //Error 99 is reset to main screen
+  if (resetType==99) {                  //Error 99 is reset to main screen
+    errorFlag = false; 
     currentMode = modeNull;    
     CreateScreen(screenMainMenu);
   }
-  else if (resetType==98) CreateScreen(currentScreen);  //Error 98 is redraw current screen
+  else if (resetType==98) {             //Error 98 is continue
+    errorFlag = false; 
+    myGLCD.setColor(0, 0, 0);
+    myGLCD.fillRect(30, 80, 290, 400);
+  }
+ 
 }
 

@@ -213,21 +213,29 @@ void CloseSurveyFiles() {
 void UpdateSettingsFile() {
   char lenSt[23], numSt[14], scanSt[8];
   settingsFile.rewind();
-  settingsFile.seekSet(streamPositionData);
-  sprintf(lenSt, "%07.2f\t%07.2f\t%07.2f", lengthTrav, lengthHoriz, lengthVert);
-  settingsFile.println(lenSt);
-  sprintf(numSt, "%04d\t%04d\t%04d", numStations, numTraverses, numSplays);
-  settingsFile.println(numSt);
-  settingsFile.print(stationFrom); settingsFile.print("\t"); settingsFile.print(stationTo); settingsFile.print("\t");
-  if ((currentMode==modePassage)||(currentMode==modeRoom)) {
-    settingsFile.rewind();
-    if (streamPositionScanLine==0) settingsFile.seekEnd();
-    else settingsFile.seekSet(streamPositionScanLine);
-    sprintf(scanSt, "\t%03d\t%03d", sta.lastTraverseNum, sta.lastSplayNum);
-    settingsFile.print(sta.code); settingsFile.println(scanSt);
-  }
-  
+  if (settingsFile.seekSet(streamPositionData)) {
+    sprintf(lenSt, "%07.2f\t%07.2f\t%07.2f", lengthTrav, lengthHoriz, lengthVert);
+    settingsFile.println(lenSt);
+    sprintf(numSt, "%04d\t%04d\t%04d", numStations, numTraverses, numSplays);
+    settingsFile.println(numSt);
+    settingsFile.print(stationFrom); settingsFile.print("\t"); settingsFile.print(stationTo); settingsFile.print("\t");
+    if ((currentMode==modePassage)||(currentMode==modeRoom)) {
+      settingsFile.rewind();
+      if (streamPositionScanLine==0) {
+        if (!settingsFile.seekEnd()) errorFlag = true;
+      } else {
+        if (!settingsFile.seekSet(streamPositionScanLine)) errorFlag = true;
+      }
+      if (errorFlag==false) {
+        sprintf(scanSt, "\t%03d\t%03d", sta.lastTraverseNum, sta.lastSplayNum);
+        settingsFile.print(sta.code); settingsFile.println(scanSt);
+      }
+    } 
+  } else errorFlag = true;
+  if (errorFlag==true) ErrorBox("Settings File", "Write Failure", "", 99);
 }
+
+
 
 // Detemine last traverse of splay number from settings file to prefill textbox
 void GetLastScanNum() {

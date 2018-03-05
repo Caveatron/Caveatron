@@ -652,7 +652,7 @@ void UpdateCalShotsDisplay() {
 void LoadCalibrationParameters() {
   String strArr;
   char cArr[9];
-  int addrMagAlignCal, addrMagHSCal, addrLidarOrientCal, addrLidarDistCal;
+  int addrMagAlignCal, addrMagHSCal, addrLidarOrientCal;
   float magAlignCal[8];
   
   //Load Screen Calibration
@@ -675,13 +675,11 @@ void LoadCalibrationParameters() {
         addrMagAlignCal = ADDR_MAG_ALIGNCAL_LIDXV;
         addrMagHSCal = ADDR_MAG_HSCAL_LIDXV;
         addrLidarOrientCal = ADDR_LIDXV_ORIENTCAL;
-        addrLidarDistCal = ADDR_LIDXV_DISTCAL;
         break;
       case 2:
         addrMagAlignCal = ADDR_MAG_ALIGNCAL_LIDSW;
         addrMagHSCal = ADDR_MAG_HSCAL_LIDSW;
         addrLidarOrientCal = ADDR_LIDSW_ORIENTCAL;
-        addrLidarDistCal = ADDR_LIDSW_DISTCAL;
         break;
     }
   } else {
@@ -709,10 +707,6 @@ void LoadCalibrationParameters() {
   }
   //Load LIDAR Rotation Orientation Calibration
   LIDAROrientCal = int(caveatron.EEPROM_readFloat(addrLidarOrientCal));
-  delay(5);
-
-  //Load LIDAR Distance Calibration
-  LIDARDistCal = int(caveatron.EEPROM_readFloat(addrLidarDistCal));
   delay(5);
 
   //Load LRF Range Calibration
@@ -743,3 +737,44 @@ void SaveCalibration() {
   caveatron.EEPROM_writeFloatArray(addrMagHSCal+0x60, calBuffer3, 3);  
 }
 
+
+//Test calibration parameters - for initial setup only - will not yield useable data!
+void LoadTestCalibrationParameters() {
+  char cArr[9];
+  float magAlignCal[8];
+
+  //You can enter your own calibration test parameters here
+  caveatron.serialNumber = "TEST";
+  String screenCalTest[3] = {"038DC286UL","00868F58UL","0013F1DFUL"};
+  float accCalTest[4][3] = {
+    {-2.0E-02,7.0E-03,-3.0E-02},
+    {6.0E-05,2.0E-08,4.0E-07},
+    {1.0E-08,6.0E-05,-3.0E-07},
+    {-3.0E-08,3.0E-07,6.0E-05}
+  };
+  float magAlignCalTest[8] = {0,0,0,0,0,0,0,0};
+  float magCalTest[4][3] = {
+    {100.0,-500.0,-800.0},
+    {0.8,-0.1,0.03},
+    {-0.1,1.0,0.01},
+    {0.03,0.01,1.0}
+  };
+  LIDAROrientCal = 0;
+  LRFRangeCal = 0;
+
+  for (int i=0; i<3; i++) {
+    screenCalTest[i].toCharArray(cArr, 9);
+    screenCal[i] = strtoul(cArr, NULL, 16);
+  }
+  for(int j=0;j<4;j++) {
+    for(int i=0;i<3;i++) accelCal[i+(3*j)] = accCalTest[j][i];
+  }
+  for(int i=0;i<4;i++) {
+    mmAmp[i] = (magAlignCalTest[i] - magAlignCalTest[i+4]) / 2;
+    mmOff[i] = (magAlignCalTest[i] + magAlignCalTest[i+4]) / 2;
+  }
+  for(int i=0;i<3;i++) hardIronCal[i] = magCalTest[0][i];
+  for(int j=0;j<3;j++) {
+    for(int i=0;i<3;i++) softIronCal[i+(3*j)] = magCalTest[j+1][i];
+  }
+}

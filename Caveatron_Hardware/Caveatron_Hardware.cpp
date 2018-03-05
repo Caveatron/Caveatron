@@ -1,8 +1,8 @@
 /*
   Caveatron_Hardware.cpp 
-  Version 0.95
+  Version 1.0
   Joe Mitchell
-  2017-12-20
+  2018-03-04
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -606,20 +606,55 @@ void Caveatron_Hardware::BATT_Init()
 			break;
 	}
 }
-	
-// Get Battery State of Charge
+
+// Compute and Return Battery Level Estimate
 unsigned int Caveatron_Hardware::BATT_GetLevel() 
 {
-	unsigned int bLevel;
+	int bLevel;
+	float bVolts;
 	switch(battGaugeType) {
 		case '1':
-			bLevel = MAXbatt.getSoC();
+			bVolts = MAXbatt.getVCell()*1000;
+			if (bVolts >= 3100) bLevel = 6 + (bVolts - 3100)/8.2;
+			else bLevel = 0.5 + (bVolts - 2750)/70;
+			if (bLevel > 100) bLevel = 100;
+			if (bLevel < 0) bLevel = 0;
 			break;
 		case '2':
 			bLevel = lipo.soc();
 			break;
 	}
 	return bLevel;
+}
+
+// Get Battery State of Charge
+unsigned int Caveatron_Hardware::BATT_GetSOC() 
+{
+	unsigned int bCharge;
+	switch(battGaugeType) {
+		case '1':
+			bCharge = MAXbatt.getSoC();
+			break;
+		case '2':
+			bCharge = lipo.soc();
+			break;
+	}
+	return bCharge;
+}
+
+// Get Battery Voltage
+unsigned int Caveatron_Hardware::BATT_GetVolts() 
+{
+	unsigned int bVolts;
+	switch(battGaugeType) {
+		case '1':
+			bVolts = MAXbatt.getVCell()*1000;
+			break;
+		case '2':
+			bVolts = lipo.voltage();
+			break;
+	}
+	return bVolts;
 }
 
 

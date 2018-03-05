@@ -5,7 +5,7 @@
 
 //Setup screen and buttons for Live LIDAR display
 void LIDARViewSetup() {
-  ctGUI.addButton(224,421,86,58,BLUE_STD,"DONE",caveatron.FONT_22,optVisible,1);
+  btn6=ctGUI.addButton(224,421,86,58,BLUE_STD,"DONE",caveatron.FONT_22,optVisible,1);
   btn2=ctGUI.addButton(10,421,86,58,BUTTON_STD,"Zoom +",caveatron.FONT_22,optVisible,2);
   btn3=ctGUI.addButton(117,421,86,58,BUTTON_STD,"Zoom -",caveatron.FONT_22,optVisible,3);
   myGLCD.setColor(WHITE_STD);
@@ -41,11 +41,11 @@ void LIDARViewDisplay_XV11() {
   int init_level = 0;
   int index = 0;
 
-  ctGUI.print("4m LIDAR Connected",10, 390, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
-  digitalWrite(LIDARPowerPin, HIGH);
   String pscale = String(320/float(scaleValue),1)+"     ";
   ctGUI.print(pscale, 130, 360, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
-  delay(1000);
+  ctGUI.print("4m LIDAR Connected",10, 390, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+  InitializeLIDAR();
+  delay(2500);
   
   while (done==false) {
   
@@ -129,7 +129,7 @@ void LIDARViewDisplay_XV11() {
       btnFound=ctGUI.checkAllButtons(OnRelease);
       switch(btnFound) {
         case 1:           //Done
-          digitalWrite(LIDARPowerPin, LOW);
+          CloseLIDAR();
           done = true;
           break;
         case 2:           //Zoom In
@@ -157,9 +157,9 @@ void LIDARViewDisplay_XV11() {
 void LIDARViewDisplay_SWEEP() {
   boolean done = false;
   boolean zoomChange = false;
-  int scaleValue = 32
-  
-  ; //pixels per 1 meter
+  boolean failedLIDAR = false;
+  boolean result;
+  int scaleValue = 32; //pixels per 1 meter
   int lidarDataX, lidarDataY;
   bool syncValues;         // 1 -> first reading of new scan, 0 otherwise
   int lidarAngle;            // in degrees (accurate to the millidegree)
@@ -167,65 +167,68 @@ void LIDARViewDisplay_SWEEP() {
   uint8_t lidarSignal; // 0:255, higher is better
   boolean overRange = false;
 
-  ctGUI.print("25m LIDAR Connected",10, 390, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
-  digitalWrite(LIDARPowerPin, HIGH);
-  delay(100);
-  device.reset();
-  delay(100);
-  InitializeLIDAR_SWEEP();
-  delay(500);
-  boolean result = device.startScanning();
-  if (result==false) FailedLIDAR(8);
   String pscale = String(320/float(scaleValue),1)+"     ";
   ctGUI.print(pscale, 130, 360, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+  ctGUI.print("25m LIDAR Connected",10, 390, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+  if (InitializeLIDAR()) {
+    delay(500);
+    if (!device.startScanning()) {
+      FailedLIDAR(8);
+      failedLIDAR = true;
+    }
+  } else failedLIDAR = true;
 
+  //Loop to acquire scan reading and check for button presses
   while (done==false) {
-  
-    // Read LIDAR Data
-    ScanPacket reading = device.getReading(result);
-    if (result)
-    {
-      // check if this reading was the very first reading of a new 360 degree scan
-      if (reading.isSync()) {
-        rot_count++;
-        if(overRange){
-          myGLCD.setColor(RED_STD);
-          myGLCD.fillCircle(160,180,3);
-          myGLCD.setColor(YELLOW_STD);
-        }
-        
-        if (rot_count>3) {
-          overRange=false;
-          myGLCD.setColor(BLACK_STD);
-          myGLCD.fillRect(1,21,318,338);
-          myGLCD.setColor(GREEN_DRK);
-          myGLCD.fillCircle(160,180,3);
-          myGLCD.setColor(YELLOW_STD);
-          if (rot_count>=9) {
-            pscale = String(320/float(scaleValue),1)+"     ";
-            ctGUI.print(pscale, 130, 360, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+    if (failedLIDAR==false) {
+      // Read LIDAR Data
+      ScanPacket reading = device.getReading(result);
+      if (result)
+      {
+        // check if this reading was the very first reading of a new 360 degree scan
+        if (reading.isSync()) {
+          rot_count++;
+          if(overRange){
+            myGLCD.setColor(RED_STD);
+            myGLCD.fillCircle(160,180,3);
+            myGLCD.setColor(YELLOW_STD);
           }
-          else zoomChange = false;
-          rot_count=0; 
+          
+          if (rot_count>3) {
+            overRange=false;
+            myGLCD.setColor(BLACK_STD);
+            myGLCD.fillRect(1,21,318,338);
+            myGLCD.setColor(GREEN_DRK);
+            myGLCD.fillCircle(160,180,3);
+            myGLCD.setColor(YELLOW_STD);
+            if (rot_count>=9) {
+              pscale = String(320/float(scaleValue),1)+"     ";
+              ctGUI.print(pscale, 130, 360, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+            }
+            else zoomChange = false;
+            rot_count=0; 
+          }
         }
-      }
-     
-      // store the info for this sample
-      syncValues = reading.isSync();
-      lidarAngle = int(reading.getAngleDegrees()+0.5);
-      lidarDistance = reading.getDistanceCentimeters()*10;
-      lidarSignal = reading.getSignalStrength();
-
-      // Plot LIDAR Data       
-      if ((lidarDistance > caveatron.minLIDARrange) && (lidarDistance < caveatron.maxLIDARrange)) {
-        lidarDataX = 160 + ((lidarDistance * sin_table[lidarAngle])/10000) * scaleValue/1000;
-        lidarDataY = 180 - ((lidarDistance * cos_table[lidarAngle])/10000) * scaleValue/1000;
-        if ((lidarDataX > 0) && (lidarDataX < 319) && (lidarDataY > 20) && (lidarDataY < 339)) {
-          myGLCD.drawPixel(lidarDataX, lidarDataY);
-        }
-        else overRange = true;      
-      } else delay(1);
-    }   
+       
+        // store the info for this sample
+        syncValues = reading.isSync();
+        lidarAngle = int(reading.getAngleDegrees()+0.5);
+        lidarDistance = reading.getDistanceCentimeters()*10;
+        lidarSignal = reading.getSignalStrength();
+  
+        // Plot LIDAR Data       
+        //if ((lidarDistance > caveatron.minLIDARrange) && (lidarDistance < caveatron.maxLIDARrange)) {
+        if 
+        (lidarDistance > 130) {
+          lidarDataX = 160 + ((lidarDistance * sin_table[lidarAngle])/10000) * scaleValue/1000;
+          lidarDataY = 180 - ((lidarDistance * cos_table[lidarAngle])/10000) * scaleValue/1000;
+          if ((lidarDataX > 0) && (lidarDataX < 319) && (lidarDataY > 20) && (lidarDataY < 339)) {
+            myGLCD.drawPixel(lidarDataX, lidarDataY);
+          }
+          else overRange = true;      
+        } else delay(1);
+      }   
+    }
 
     // Check for button presses
     if (((myTouch.dataAvailable()==true) || (ctGUI.anyButtonPressed==true)) && (zoomChange==false)){
@@ -233,8 +236,8 @@ void LIDARViewDisplay_SWEEP() {
       switch(btnFound) {
         case 1:           //Done
           device.stopScanning();
-          delay(50);
-          digitalWrite(LIDARPowerPin, LOW);
+          delay(250);
+          CloseLIDAR();
           done = true;
           break;
         case 2:           //Zoom In
@@ -287,7 +290,6 @@ void InitializeTraverse() {
   distance = caveatron.LRFdistance - caveatron.LIDARFrontDist;
   if ((LRFstatus != 1) || (distance <= 0)) FailedLIDAR(LRFstatus);
   else {
-    digitalWrite(LIDARPowerPin, HIGH);
     traverseTo.toCharArray(traverseToChar, 8);
     traverseNum.toCharArray(traverseNumChar, 4);
     sta.lastTraverseNum = traverseNum.toInt();
@@ -295,7 +297,7 @@ void InitializeTraverse() {
     timeHour.toCharArray(timeHourChar, 3); timeMinute.toCharArray(timeMinuteChar, 3); timeSecond.toCharArray(timeSecondChar, 3);
     lidarFile << endl << "#Station: " << traverseToChar << endl;
     lidarFile << "#Traverse: " << traverseNumChar << endl;
-    lidarFile << "#Passage Mode" << endl;
+    lidarFile << "#Lidar Type: " << int(lidarModuleType) << endl;
     lidarFile << "#Time: " << timeHourChar << ":" << timeMinuteChar << ":" << timeSecondChar << endl << endl;
     lidarFile << 'S' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
     lastLIDARdistance = distance;
@@ -314,11 +316,15 @@ void InitializeTraverse() {
     myGLCD.setBackColor(BLACK_STD);
     lastLRFTime = millis();
     caveatron.LRF_Fire();
-    if (lidarModuleType==1) RecordLIDAR_XV11();
-    else if (lidarModuleType==2) {
-      boolean result = device.startScanning();
-      if(result==false) FailedLIDAR(8);
-      else RecordLIDAR_SWEEP();
+    switch (lidarModuleType) {
+      case 1:
+        RecordLIDAR_XV11();
+        break;
+      case 2:
+        boolean result = device.startScanning();
+        if(result==false) FailedLIDAR(8);
+        else RecordLIDAR_SWEEP();
+        break;
     }
   }
 }
@@ -359,12 +365,6 @@ boolean TakeSplayShot() {
   else {
     caveatron.LRF_LaserOff();
     caveatron.LRF_PowerOff();
-    if (lidarModuleType==2) {
-      digitalWrite(LIDARPowerPin, HIGH);
-      delay(100);
-      device.reset();
-      delay(100);
-    }
     return true;
   }
 }
@@ -379,7 +379,6 @@ void InitializeSplay() {
   data_count = 0;
   save_count = 0;
   idx=0;
-  digitalWrite(LIDARPowerPin, HIGH);
   splayStation.toCharArray(splayStationChar, 8);
   splayNum.toCharArray(splayNumChar, 4);
   sta.lastSplayNum = splayNum.toInt();
@@ -387,10 +386,10 @@ void InitializeSplay() {
   timeHour.toCharArray(timeHourChar, 3); timeMinute.toCharArray(timeMinuteChar, 3); timeSecond.toCharArray(timeSecondChar, 3);
   lidarFile << endl << "#Station: " << splayStationChar << endl;
   lidarFile << "#Splay: " << splayNumChar << endl;
-  lidarFile << "#Room Mode" << endl;
+  lidarFile << "#Lidar Type: " << int(lidarModuleType) << endl;
   lidarFile << "#Time: " << timeHourChar << ":" << timeMinuteChar << ":" << timeSecondChar << endl << endl;
   lidarFile << 'S' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
-  delay(2500);
+  delay(1000);
   BuzzerBEEP(800, 500);
   myGLCD.setColor(BLACK_STD);
   myGLCD.fillRect(40, 372, 280, 428);
@@ -405,23 +404,49 @@ void InitializeSplay() {
   }
 }
 
-//SWEEP LIDAR hardware initialization routine (takes several seconds, so is called early from Mode setup functions)
-void InitializeLIDAR_SWEEP() {
-  ctGUI.print("LIDAR Initializing", 160, 170, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
-  ctGUI.print("Please Wait ...", 160, 208, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
-  boolean result = device.waitUntilMotorReady();   
-  myGLCD.setColor(BLACK_STD);
-  myGLCD.fillRect(10,170,310,246);
-  if(result==false) FailedLIDAR(6);
-  else {
-    result = device.setSampleRate(SAMPLE_RATE_CODE_1000_HZ);
-    if(result==false) FailedLIDAR(7);
-    else {
-      int32_t valueMotor, valueSampling;
-      valueMotor = device.getMotorSpeed();
-      valueSampling = device.getSampleRate();
-    }
+
+//LIDAR hardware initialization routine (takes several seconds, so is called early from Mode setup functions)
+boolean InitializeLIDAR() {
+  int tryCount=0;
+  boolean result=false;
+  digitalWrite(LIDARPowerPin, HIGH);
+  switch (lidarModuleType) {
+    case 1:
+      delay(250);
+      Serial2.begin(115200);
+      result = true;
+      break;
+    case 2:
+      ctGUI.print("LIDAR Initializing", 160, 170, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+      ctGUI.print("Please Wait ...", 160, 208, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+      delay(4000);
+      Serial2.begin(115200);
+      while ((tryCount<8)&&(result==false)) {
+        delay(500);
+        result = device.setSampleRate(SAMPLE_RATE_CODE_1000_HZ);
+        tryCount++;
+      }
+      myGLCD.setColor(BLACK_STD);
+      myGLCD.fillRect(10,170,310,236);
+      if (result==false) FailedLIDAR(6);
+      else {
+        ctGUI.print("LIDAR Calibrating", 160, 170, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+        ctGUI.print("Please Wait ...", 160, 208, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+        delay(3000);
+        tryCount=0;
+        result=false;
+        while ((tryCount<16)&&(result==false)) {
+          delay(500);
+          result = device.getMotorReady();
+          tryCount++;
+        }
+        myGLCD.setColor(BLACK_STD);
+        myGLCD.fillRect(10,170,310,236);
+        if (result==false) FailedLIDAR(7);
+      }
+      break;
   }
+  return result;
 }
 
 //Recording function for XV LIDAR
@@ -477,7 +502,7 @@ void RecordLIDAR_XV11() {
         for (j=0; j<4; j++) {
           angle = ((index * 4 + j) + LIDAROrientCal) % 360;
                     
-          lidarData[angle][0] = word(b_data[j][1], b_data[j][0]) + LIDARDistCal;
+          lidarData[angle][0] = word(b_data[j][1], b_data[j][0]);
           lidarData[angle][1] = (b_data[j][2] | (b_data[j][3] << 8));
           data_count++;
           
@@ -570,7 +595,7 @@ void RecordLIDAR_SWEEP() {
   // in degrees (accurate to the millidegree)
   uint16_t lidarDistance;      // in cm
   uint8_t lidarSignal; // 0:255, higher is better
- int rrr=0;
+  int rrr=0;
   byte loop_count = 0;
   int compass_count = 0;
   int lidarErrorCount = 0;
@@ -624,10 +649,11 @@ void RecordLIDAR_SWEEP() {
       // store the info for this sample
       syncValues = reading.isSync();
       lidarAngle = reading.getAngleDegrees();
-      lidarDistance = reading.getDistanceCentimeters()*10 +  + LIDARDistCal;
+      lidarDistance = reading.getDistanceCentimeters()*10;
       lidarSignal = reading.getSignalStrength();
       
-      if ((lidarDistance > 100) && (lidarDistance < 25000) && (lidarAngle < 360)) {
+      //if ((lidarDistance > 100) && (lidarDistance < 25000) && (lidarAngle < 360)) {
+      if ((lidarDistance > 130) && (lidarAngle < 360)) {
           // Write LIDAR reading to SD card
           lidarFile << lidarAngle << "\t" << lidarDistance << "\t" << int(lidarSignal) << endl;
           save_count++;
@@ -721,9 +747,10 @@ boolean GetLIDARDistance() {
 //When scan was successful and ended by pressing the stop scan button
 //Turn off hardware, close file, and display scan statistics
 void EndLIDARScan() {
+  lidarFile << flush;
   if (lidarModuleType==2) device.stopScanning();
-  delay(50);
-  digitalWrite(LIDARPowerPin, LOW);
+  delay(250);
+  CloseLIDAR();
   caveatron.LRF_LaserOff();
   caveatron.LRF_PowerOff();
   laserFlag = false;
@@ -772,23 +799,31 @@ void EndLIDARScan() {
 
 //If LIDAR scan failed, stop hardware, close files, and display error code
 void FailedLIDAR(int errorCode) {
-  if (errorCode > 8) {
-    lidarFile << 'D' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+  //In Room or Passage Mode, marked scan failed and flush data to SD card 
+  if (currentMode != modeLIDARView) {   
+    if (errorCode > 8) {
+      lidarFile << 'D' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+    }
+    if (errorCode > 5) lidarFile << "#FAILED" << endl;
+    lidarFile << flush;
   }
+  //Shutdown LIDAR and LRF
   if (lidarModuleType==2) device.stopScanning();
-  delay(50);
-  digitalWrite(LIDARPowerPin, LOW);
+  delay(250);
+  CloseLIDAR();
   caveatron.LRF_LaserOff();
   caveatron.LRF_PowerOff();
   laserFlag = false;
   LRFFlag = false;
   caveatron.LRF_SetMode(0);
-  UpdateSettingsFile();
+  //In Room or Passage Mode, update settings file
+  if (currentMode != modeLIDARView) UpdateSettingsFile();
   BuzzerBEEP(350, 1500);
-  if (errorCode > 5) lidarFile << "#FAILED" << endl;
+  //Configure screen and display failure message
   myGLCD.setColor(BLACK_STD);
-  myGLCD.fillRect(40, 372, 280, 428);
+  if (currentMode != modeLIDARView) myGLCD.fillRect(40, 372, 280, 428);
   ctGUI.makeObjectInvisible(btn1);
+  ctGUI.makeObjectInvisible(btn2);
   ctGUI.makeObjectInvisible(btn3);
   ctGUI.makeObjectVisible(btn4);
   ctGUI.makeObjectVisible(btn5);
@@ -810,10 +845,10 @@ void FailedLIDAR(int errorCode) {
       ctGUI.print("Mismatched readings", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
       break;
     case 6:
-      ctGUI.print("LIDAR Init Failed", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
+      ctGUI.print("LIDAR comms error", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
       break;
     case 7:
-      ctGUI.print("LIDAR Sample Rate Error", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
+      ctGUI.print("LIDAR motor init failed", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
       break;
     case 8:
       ctGUI.print("LIDAR did not start", 160, 200, caveatron.FONT_22, 2, CENTER_J, RED_STD, BLACK_STD);
@@ -837,6 +872,10 @@ void FailedLIDAR(int errorCode) {
   }
 }
 
+void CloseLIDAR() {
+  Serial2.end();
+  digitalWrite(LIDARPowerPin, LOW);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                        Sine and Cosine Look-up Tables - speeds calculations

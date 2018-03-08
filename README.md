@@ -4,16 +4,10 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 
 ## Release Notes
 
-Version: 0.99
+Version: 1.00
 
-Final beta version - Informal release for testing purposes only.
+Initial Public Release
 
-Remaining work: Complete testing of 25 m LIDAR module.
-
-Known bugs:
-- 25 m LIDAR occasionally fails to initialize.
-- In Room mode, if 25 m LIDAR fails to initialize, corrupted GUI screen appears
-- In Room mode, a successful scan will sometimes be marked as failed in the data file if a subsequent Room mode scan fails
 
 ## Instructions for setting up Arduino IDE to compile and install the Caveatron Software
 
@@ -33,8 +27,8 @@ Once installed and launched, in the IDE menu, go to `Tools->Boards->Board Manage
 
 Edit RingBuffer.h file:
 
-- Windows: `C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\hardware\sam\1.6.x\cores\arduino\`
-- Mac: `{user}/Library/Arduino15/packages/arduino/hardware/sam/1.6.x/cores/arduino/`
+- Windows: `C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\hardware\sam\1.6.11\cores\arduino\RingBuffer.h`
+- Mac: `{user}/Library/Arduino15/packages/arduino/hardware/sam/1.6.11/cores/arduino/RingBuffer.h`
 
 Change this line to read as follows:
 
@@ -46,8 +40,8 @@ Change this line to read as follows:
 
 Edit `cstdio` file:
 
-- Windows: `C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\arm-none-eabi-gcc\4.8.3-2014q1\arm-none-eabi\include\c++\4.8.3\`
-- Mac: `{user}/Library/Arduino15/packages/arduino/tools/arm-none-eabi-gcc/4.8.3-2014q1/arm-none-eabi/include/c++/4.8.3/`
+- Windows: `C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\arm-none-eabi-gcc\4.8.3-2014q1\arm-none-eabi\include\c++\4.8.3\cstdio`
+- Mac: `{user}/Library/Arduino15/packages/arduino/tools/arm-none-eabi-gcc/4.8.3-2014q1/arm-none-eabi/include/c++/4.8.3/cstdio`
 
 Comment out this line to read as follows:
 
@@ -55,20 +49,21 @@ Comment out this line to read as follows:
 //#undef printf
 ```
 
-### Install Caveatron Libraries
+### Download and Install Caveatron Libraries
 
-1. Locate your `Arduino Libraries` folder:
+1. Clone the `https://github.com/Caveatron/caveatron` repository.
+2. Locate your `Arduino Libraries` folder:
     - Windows: `C:\Users\{user}\Documents\Arduino\libraries\`
     - Mac: `{user}/Documents/Arduino/libraries/`
-1. Copy the `Caveatron_GUI` and `Caveatron_Hardware` libraries into the `Arduino Libraries` folder
+3. Copy the `Caveatron_GUI` and `Caveatron_Hardware` libraries into the `Arduino Libraries` folder
 
-### Install Third-Party Libraries
+### Download and Install Third-Party Libraries
 
-1. Clone the https://github.com/Caveatron/caveatron_libraries repository. (This contains additional, third_party libraries that Caveatron needs, but which are covered by difference software licenses.)
-1. Locate your `Arduino Libraries` folder:
+1. Clone the `https://github.com/Caveatron/caveatron_libraries` repository. (This contains additional, third_party libraries that Caveatron needs, but which are covered by difference software licenses.)
+2. Locate your `Arduino Libraries` folder:
     - Windows: `C:\Users\{user}\Documents\Arduino\libraries\`
     - Mac: `{user}/Documents/Arduino/libraries/`
-1. Copy all 10 folders into the `Arduino Libraries` folder
+3. Copy all 10 folders into the `Arduino Libraries` folder
 
 
 ### Purchase a Coldtears Electronics 3.5" LCD Display to obtain the additional library you will need
@@ -77,12 +72,26 @@ The final library you will need is the UTFT_GHL library. At the request of the a
 
 `https://www.ebay.com/itm/3-5-inch-TFT-LCD-module-w-Font-IC-480x320-full-angle-arduino-DUE-MEGA-3-2-4-3-/121057702584?hash=item1c2f99f2b8`
 
-Once you have the library, install it alongside the rest of the Arduino libraries as described above.
+To obtain the library after you have purchased the display:
+1. Navigate to www.uftghl.com/downloads.php
+2. Here you will be asked to fill in three fields, which are on a sticker applied to the ColdTears Electronics screen that you bought.
+3. Download the file (warning: the link will be one-time usage, so be sure to keep the file somewhere safe)
+4. The download will be a .7z file. On Windows you can use 7zip (`http://www.7-zip.org`). On Mac you can use Keka (`http://www.kekaosx.com`)
+5. Copy the UFT_GHL library folder to the Arduino libraries folder
+
 
 ### Compiling the Code
 
-In the Arduino IDE, open the Caveatron software code. You should see a series of 10 tabs across the top of the windows with the different segments of the code. Click the checkmark icon in the upper right of the Arduino window to compile. The message section at the bottom of the window may display a few warnings, but should compile successfully with a message of "Done Compiling" just above the black message section.
+In the Arduino IDE, open the Caveatron software code by double clicking on the Caveatron.ino file. This will open all the other files which you should see a series of 10 tabs across the top of the windows with the different segments of the code. Click the checkmark icon in the upper left of the Arduino window to compile. The message section at the bottom of the window may display a few warnings, but should compile successfully with a message of "Done Compiling" just above the black message section.
 
 ### Upload to Caveatron
 
 Connect to the USB port on the Caveatron. In the Arduino IDE menu, under Tools->Boards be sure that the Arduino Due is selected. Also under Tools->Port, be sure the correct serial port on your computer is selected. Click the right arrow icon in the upper left corner of the Arduino IDE window (just to the right of the check icon) and the installation process will begin. This will take several minutes. A message of "Done Uploading" will display just above the black message section at the bottom of the window when this is complete.
+
+### Initial Testing of the Code
+
+You can do an initial test of the code with only the Arduino Due, the LCD Shield, and the LCD Display all plugged together without additional hardware by making a few small edits at the top of the main (Caveatron) tab of the code.
+1. Edit `#define AUTO_CONFIG` to have a value of 0 instead of 1 (1 is automatic configuration loading from the EEPROM, 0 uses manually entered values in the Calibrate tab.
+2. Edit `char hardwareCode[] =` to have an 11 digit value inside the quotation marks based on your hardware components. See the Caveatron Hardware Code Description document for these values.
+Use the calibration values in the `LoadTestCalibrationParameters()` function at the bottom of the Calibrate tab or you can enter your own. Note that until you have calibrated the touchscreen, the screen will not accurately register a touch position.
+

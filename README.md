@@ -15,11 +15,11 @@ Initial Public Release
 
 Download the IDE from the link below. It has been tested on the current version 1.8.5:
 
-`https://www.arduino.cc/en/Main/Software`
+https://www.arduino.cc/en/Main/Software
 
 If a newer version no longer functions properly, previous versions of the Arduino IDE can be found here:
 
-`https://www.arduino.cc/en/Main/OldSoftwareReleases#previous`
+https://www.arduino.cc/en/Main/OldSoftwareReleases#previous
 
 Once installed and launched, in the IDE menu, go to `Tools->Boards->Board Manager` and install the "Arduino SAM Boards (32-bits ARM Cortex-M3)" for Arduino Due (not the SAMD Boards version). Install version 1.6.11.
 
@@ -51,7 +51,7 @@ Comment out this line to read as follows:
 
 ### Download and Install Caveatron Libraries
 
-1. Clone the `https://github.com/Caveatron/caveatron` repository.
+1. Clone the https://github.com/Caveatron/caveatron repository.
 2. Locate your `Arduino Libraries` folder:
     - Windows: `C:\Users\{user}\Documents\Arduino\libraries\`
     - Mac: `{user}/Documents/Arduino/libraries/`
@@ -59,7 +59,7 @@ Comment out this line to read as follows:
 
 ### Download and Install Third-Party Libraries
 
-1. Clone the `https://github.com/Caveatron/caveatron_libraries` repository. (This contains additional, third_party libraries that Caveatron needs, but which are covered by difference software licenses.)
+1. Clone the https://github.com/Caveatron/caveatron_libraries repository. (This contains additional, third_party libraries that Caveatron needs, but which are covered by difference software licenses.)
 2. Locate your `Arduino Libraries` folder:
     - Windows: `C:\Users\{user}\Documents\Arduino\libraries\`
     - Mac: `{user}/Documents/Arduino/libraries/`
@@ -70,13 +70,13 @@ Comment out this line to read as follows:
 
 The final library you will need is the UTFT_GHL library. At the request of the author, it cannot be distributed publically and requires the purchase of a Coldtears Electronics LCD display to obtain it (which you will need anyway in order to build a Caveatron). The displays can be purchased here:
 
-`https://www.ebay.com/itm/3-5-inch-TFT-LCD-module-w-Font-IC-480x320-full-angle-arduino-DUE-MEGA-3-2-4-3-/121057702584?hash=item1c2f99f2b8`
+https://www.ebay.com/itm/3-5-inch-TFT-LCD-module-w-Font-IC-480x320-full-angle-arduino-DUE-MEGA-3-2-4-3-/121057702584?hash=item1c2f99f2b8
 
 To obtain the library after you have purchased the display:
 1. Navigate to www.uftghl.com/downloads.php
 2. Here you will be asked to fill in three fields, which are on a sticker applied to the ColdTears Electronics screen that you bought.
 3. Download the file (warning: the link will be one-time usage, so be sure to keep the file somewhere safe)
-4. The download will be a .7z file. On Windows you can use 7zip (`http://www.7-zip.org`). On Mac you can use Keka (`http://www.kekaosx.com`)
+4. The download will be a .7z file. To decompress on Windows you can use 7zip (http://www.7-zip.org) or on a Mac you can use Keka (http://www.kekaosx.com)
 5. Copy the UFT_GHL library folder to the Arduino libraries folder
 
 

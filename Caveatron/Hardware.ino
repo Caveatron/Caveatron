@@ -14,7 +14,8 @@ void ReadCompassData (int numPoints) {
     singleRoll = measureRoll(singleInclin);
     singleInclin = measureTilt(singleRoll);
     singleAzimuth = measureHeading(singleInclin, singleRoll);
-    roll += singleRoll;
+    //roll += singleRoll;
+    roll = SumRoll(roll, singleRoll);
     inclination += -singleInclin; 
     azimuth = SumAzimuth(azimuth, singleAzimuth);
     //if (currentMode==modeShot) ztilt = ztilt + atan2(-ax/rtilt,(ay* sin(singleRoll) + az*cos(singleRoll))/rtilt);
@@ -22,7 +23,7 @@ void ReadCompassData (int numPoints) {
   if (numPoints > 0) AverageCompassData(numPoints);
 }
 
-// Perform compass reading averaging
+// Perform compass reading averaging and convert back to degrees
 void AverageCompassData (int numPoints) {
   inclination = (inclination/numPoints) * 57.29578;
   roll = (roll/numPoints) * 57.29578;
@@ -123,6 +124,15 @@ float AverageAzimuth(float sumHeading, float numPoint) {
   float trueHeading = (sumHeading/numPoint) * 57.29578;
   if (trueHeading<0) trueHeading += 360;
   return trueHeading;
+}
+
+//Function for summing multiple roll angle readings (for averaging) to avoid problems when upside down (+180/-180 wraparound)
+float SumRoll(float sumRoll, float newRoll) {
+  //Check if new roll angle has the opposite sign from the current roll sum
+  if ((sumRoll > 0) && (newRoll < -1.570796)) newRoll += 6.283185;
+  else if ((sumRoll < 0) && (newRoll > 1.570796)) newRoll -= 6.283185;
+  sumRoll += newRoll; 
+  return sumRoll;
 }
 
 //Correct azimuth and inclination for the selected measurement point at the rear bottom corner of the enclosure

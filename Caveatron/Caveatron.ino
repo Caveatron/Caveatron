@@ -1,29 +1,22 @@
 
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 1.00                             //
+//                       Version 1.01                             //
 /******************************************************************/
-// Joe Mitchell, 2018-03-04
+// Joe Mitchell, 2018-04-11
 
 // Change Notes:
-// Initial public release. 
-// Fixed bug that resulted in peiodic SWEEP LIDAR initialization failure.
-// Fixed bug that could cause LIDAR data loss if settings file becomes corrupted.
-// Added error checking to detect if setting file becomes corrupted.
-// Fixed problems with failed LIDAR condition screen display.
-// Added LIDAR type to each scan in CVL file.
-// Added custom battery level computation for MAX17043 to Caveatron Hardware library.
-// Added ability to load test calibration pararmeters directly for setup and testing. 
+// Fixed bug that caused erronous roll readings during LIDAR scans when holding the unit upside down
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
 #define AUTO_CONFIG 1
 
 // For manual hardware configuration, set hardware revision and code
 char hardwareRev = 'A';
-char hardwareCode[] = "11121011110";
+char hardwareCode[] = "12221011110";
 uint8_t lidarModuleType;
 
-String softwareVersion = "1.00";
+String softwareVersion = "1.01";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.

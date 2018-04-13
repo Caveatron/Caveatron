@@ -744,7 +744,7 @@ void LoadTestCalibrationParameters() {
   float magAlignCal[8];
 
   //You can enter your own calibration test parameters here
-  caveatron.serialNumber = "TEST";
+  caveatron.serialNumber = "0A000";
   String screenCalTest[3] = {"038DC286UL","00868F58UL","0013F1DFUL"};
   float accCalTest[4][3] = {
     {-2.0E-02,7.0E-03,-3.0E-02},

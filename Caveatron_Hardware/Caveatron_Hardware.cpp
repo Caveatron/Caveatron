@@ -1,10 +1,10 @@
 /*
-  Caveatron_Hardware.cpp 
+  Caveatron_Hardware.cpp
   Version 1.0
   Joe Mitchell
   2018-03-04
-  
-  This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
+
+  This library contains all functions to interface between the main code and the hardware used for the Caveatron.
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
 */
 
@@ -29,7 +29,7 @@ void Caveatron_Hardware::Init()
 	char hwCode[11], hwRev;
 	//Load Serial Number
 	serialNumber = EEPROM_readCharArray(ADDR_SERIAL_NUM, 5);
-	hwRev = serialNumber.charAt(1);	
+	hwRev = serialNumber.charAt(1);
 	//Load Hardware Parameters
 	String hwCodeStr = EEPROM_readCharArray(ADDR_HARDWARE_CODE, 11);
 	hwCodeStr.toCharArray(hwCode, sizeof(hwCode));
@@ -54,9 +54,9 @@ void Caveatron_Hardware::Init(char hRev, char hCode[])
 		9=Piezo Buzzer
 		10=Wireless
 	*/
-	
+
 	hardwareRev = hRev;
-	
+
 	sdType=hCode[0];
 	displayType=hCode[1];
 	graphicsType=hCode[2];
@@ -92,20 +92,20 @@ void Caveatron_Hardware::LCD_Init()
 			break;
 	}
 
-	// Initialize Font IC 
+	// Initialize Font IC
 	switch(graphicsType) {
 		case '1':
 			myFont_CTE->SPI_Flash_init(52);
 			//BVS= Bitstream vera sans, suffix = font size in pixel (height)
-			FONT_13 = CBVS_13;										 
-			FONT_15 = CBVS_15;										 
-			FONT_19 = CBVS_19;											 
-			FONT_22 = CBVS_22;											 
-			FONT_28 = CBVS_28;											 
-			FONT_34 = CBVS_34;											 
-			FONT_43 = CBVS_43;											 
-			FONT_52 = CBVS_52;											 
-			FONT_74 = CBVS_74;											 
+			FONT_13 = CBVS_13;
+			FONT_15 = CBVS_15;
+			FONT_19 = CBVS_19;
+			FONT_22 = CBVS_22;
+			FONT_28 = CBVS_28;
+			FONT_34 = CBVS_34;
+			FONT_43 = CBVS_43;
+			FONT_52 = CBVS_52;
+			FONT_74 = CBVS_74;
 			FONT_112 = CBVS_112;
 			//Icon and Graphic address locations
 			iSHOT = 500;
@@ -125,15 +125,15 @@ void Caveatron_Hardware::LCD_Init()
 		case '2':
 			myFont_GHL->SPI_Flash_init(52);
 			//BVS= Bitstream vera sans, suffix = font size in pixel (height)
-			FONT_13 = BVS_13;										 
-			FONT_15 = BVS_15;										 
-			FONT_19 = BVS_19;											 
-			FONT_22 = BVS_22;											 
-			FONT_28 = BVS_28;											 
-			FONT_34 = BVS_34;											 
-			FONT_43 = BVS_43;											 
-			FONT_52 = BVS_56;											 
-			FONT_74 = BVS_74;											 
+			FONT_13 = BVS_13;
+			FONT_15 = BVS_15;
+			FONT_19 = BVS_19;
+			FONT_22 = BVS_22;
+			FONT_28 = BVS_28;
+			FONT_34 = BVS_34;
+			FONT_43 = BVS_43;
+			FONT_52 = BVS_56;
+			FONT_74 = BVS_74;
 			FONT_112 = BVS_112;
 			//Icon and Graphic address locations
 			iSHOT = 255;
@@ -242,24 +242,24 @@ void Caveatron_Hardware::LRF_Init()
 			LRFmaxRange = 45.0;
 			break;
 	}
-	
-	// Initialize LRF control pins and ports 
+
+	// Initialize LRF control pins and ports
 	switch(lrfType) {
 		case '1':
 		case '2':
-			pinMode(LRFOnPin, OUTPUT);   
+			pinMode(LRFOnPin, OUTPUT);
 			digitalWrite(LRFOnPin, LOW);
-			pinMode(LRFPowerPin, OUTPUT); 
-			digitalWrite(LRFPowerPin, LOW); 
+			pinMode(LRFPowerPin, OUTPUT);
+			digitalWrite(LRFPowerPin, LOW);
 			Serial1.begin(115200);
 			break;
 		case '3':
-			pinMode(LRFPowerPin, OUTPUT); 
-			digitalWrite(LRFPowerPin, LOW); 
+			pinMode(LRFPowerPin, OUTPUT);
+			digitalWrite(LRFPowerPin, LOW);
 			Serial1.begin(19200);
 			break;
 	}
-	
+
 }
 
 //Turn on power to LRF
@@ -330,7 +330,7 @@ void Caveatron_Hardware::LRF_SetMode(boolean mode)
 {
 	//mode = 1 - LIDAR mode
 	//mode = 0 - Normal mode
-	LRFmode = mode;	
+	LRFmode = mode;
 	switch(lrfType) {
 		case '1':
 		case '2':
@@ -356,24 +356,24 @@ void Caveatron_Hardware::LRF_SetMode(boolean mode)
 			}
 			LRFperiod = 575;
 			break;
-	}	
+	}
 }
 
-//Read raw distance from LRF and return read status code 
+//Read raw distance from LRF and return read status code
 uint8_t Caveatron_Hardware::LRF_Read()
 {
 	char buf[256];
-		
+
 	switch(lrfType) {
 		case '1':
-			
+
 			if (Serial1.available()) {
 				char *comma;
 				int dist, rc;
-				
+
 				if (LRFmode==1) LRFstartTime = millis();
 				while ((millis() - LRFstartTime) < LRFtimeout) {
-							
+
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
 					//if ((LRFmode==1) && (rc == 0))
 						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
@@ -395,18 +395,18 @@ uint8_t Caveatron_Hardware::LRF_Read()
 					}
 				}
 				return 3; //Timeout has occurred - Return 3
-			}		
+			}
 			break;
-			
+
 		case '2':
 
 			if (Serial1.available()) {
 				int dist, rc;
 				char diststr[10];
-				
+
 				if (LRFmode==1) LRFstartTime = millis();
 				while ((millis() - LRFstartTime) < LRFtimeout) {
-							
+
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
 					//if ((LRFmode==1) && (rc == 0))
 						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
@@ -429,17 +429,17 @@ uint8_t Caveatron_Hardware::LRF_Read()
 				return 3; //Timeout has occurred - Return 3
 			}
 			break;
-	
+
 		case '3':
-		
+
 			if (Serial1.available()) {
 				int rc;
 				char diststr[8];
 				char *pchs, *pche;
-				
+
 				if (LRFmode==1) LRFstartTime = millis();
 				while ((millis() - LRFstartTime) < LRFtimeout) {
-							
+
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
 					//if ((LRFmode==1) && (rc == 0))
 						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
@@ -506,14 +506,14 @@ void Caveatron_Hardware::LIDAR_Init(uint8_t lidarType)
 			LIDARLateral = 0.02;
 			break;
 	}
-	
+
 	// Setup LIDAR range limits (Distance in mm)
 	switch(lidarType) {
 		case 1:
 			minLIDARrange = 130;
 			maxLIDARrange = 4500;
 			maxLIDARsignal = 66000;
-			ptsLIDARrot = 360;			
+			ptsLIDARrot = 360;
 			break;
 		case 2:
 			minLIDARrange = 100;
@@ -539,7 +539,7 @@ void Caveatron_Hardware::IMU_Init()
 			compass.enableDefault();
 			break;
 	}
-	
+
 	// Set bounds for hard & soft iron calibration data collection
 	switch(compassType) {
 		case '1':
@@ -559,7 +559,7 @@ void Caveatron_Hardware::IMU_Init()
 	}
 }
 
-// Reads compass data and loads it into variables 
+// Reads compass data and loads it into variables
 void Caveatron_Hardware::IMU_Read()
 {
 	switch(compassType) {
@@ -573,7 +573,7 @@ void Caveatron_Hardware::IMU_Read()
 			IMU_m_z = compass.m.z;
 			break;
 	}
-	
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -583,15 +583,15 @@ void Caveatron_Hardware::IMU_Read()
 // Initialize Battery Gauge Hardware
 void Caveatron_Hardware::BATT_Init()
 {
-	// Set parameters for battery 
+	// Set parameters for battery
 	switch(batteryType) {
 		case '1':
 			BATTERY_CAPACITY = 4400;
 			CUTOFF_VOLTAGE = 2900;
 			break;
 	}
-	
-	// Load libraries and initialize battery gauge hardware 
+
+	// Load libraries and initialize battery gauge hardware
 	switch(battGaugeType) {
 		case '1':
 			MAXbatt.setI2CPort(Wire1);
@@ -608,7 +608,7 @@ void Caveatron_Hardware::BATT_Init()
 }
 
 // Compute and Return Battery Level Estimate
-unsigned int Caveatron_Hardware::BATT_GetLevel() 
+unsigned int Caveatron_Hardware::BATT_GetLevel()
 {
 	int bLevel;
 	float bVolts;
@@ -628,7 +628,7 @@ unsigned int Caveatron_Hardware::BATT_GetLevel()
 }
 
 // Get Battery State of Charge
-unsigned int Caveatron_Hardware::BATT_GetSOC() 
+unsigned int Caveatron_Hardware::BATT_GetSOC()
 {
 	unsigned int bCharge;
 	switch(battGaugeType) {
@@ -643,7 +643,7 @@ unsigned int Caveatron_Hardware::BATT_GetSOC()
 }
 
 // Get Battery Voltage
-unsigned int Caveatron_Hardware::BATT_GetVolts() 
+unsigned int Caveatron_Hardware::BATT_GetVolts()
 {
 	unsigned int bVolts;
 	switch(battGaugeType) {
@@ -673,7 +673,7 @@ void Caveatron_Hardware::RTC_GetDateTime()
 			Wire1.beginTransmission(DS3231_ADDRESS);
 			Wire1.write(zero);
 			Wire1.endTransmission();
-			Wire1.requestFrom(DS3231_ADDRESS, (byte)7);
+			Wire1.requestFrom((byte)DS3231_ADDRESS, (byte)7);
 
 			// Read values
 			RTCsecond = bcdToDec(Wire1.read());
@@ -684,7 +684,7 @@ void Caveatron_Hardware::RTC_GetDateTime()
 			RTCday = bcdToDec(Wire1.read());
 			RTCmonth = bcdToDec(Wire1.read());
 			RTCyear = bcdToDec(Wire1.read());
-			
+
 			break;
 	}
 }
@@ -705,7 +705,7 @@ void Caveatron_Hardware::RTC_SetDateTime(int nYear, int nMonth, int nDay, int nH
 
 			Wire1.beginTransmission(DS3231_ADDRESS);
 			Wire1.write(zero); //stop Oscillator
-			  
+
 			Wire1.write(decToBcd(byteSecond));
 			Wire1.write(decToBcd(byteMinute));
 			Wire1.write(decToBcd(byteHour));
@@ -713,14 +713,14 @@ void Caveatron_Hardware::RTC_SetDateTime(int nYear, int nMonth, int nDay, int nH
 			Wire1.write(decToBcd(byteDay));
 			Wire1.write(decToBcd(byteMonth));
 			Wire1.write(decToBcd(byteYear));
-			Wire1.write(zero); //start 
+			Wire1.write(zero); //start
 			Wire1.endTransmission();
 			break;
 	}
 }
 
 // Get temperature from RTC sensor
-float Caveatron_Hardware::RTC_GetTemperature() 
+float Caveatron_Hardware::RTC_GetTemperature()
 {
   	switch(clockType) {
 		case '1':
@@ -728,7 +728,7 @@ float Caveatron_Hardware::RTC_GetTemperature()
 			Wire1.beginTransmission(DS3231_ADDRESS);
 			Wire1.write(0x11);
 			Wire1.endTransmission();
-			Wire1.requestFrom(DS3231_ADDRESS, (byte)2);
+			Wire1.requestFrom((byte)DS3231_ADDRESS, (byte)2);
 			if(Wire1.available()) {
 				byte tMSB = Wire1.read(); //2's complement int portion
 				byte tLSB = Wire1.read(); //fraction portion
@@ -790,7 +790,7 @@ void Caveatron_Hardware::SD_Init()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Write array of floating point values to EEPROM
-void Caveatron_Hardware::EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues) 
+void Caveatron_Hardware::EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues)
 {
   byte aBytes[30];
   #if defined(_SAM3XA_)

@@ -8,6 +8,7 @@ void ReadCompassData (int numPoints) {
   int i;
   int p = 1;
   if (numPoints > 0) {azimuth = 0; inclination = 0; roll = 0; ztilt = 0; p = numPoints;}
+  for (int j=0;j<6;j++) rawIMU[j]=0;
   float singleInclin, singleRoll, singleAzimuth;
   for (i=0; i<p; i++) {
     GetCompassReading();
@@ -18,6 +19,8 @@ void ReadCompassData (int numPoints) {
     roll = SumRoll(roll, singleRoll);
     inclination += -singleInclin; 
     azimuth = SumAzimuth(azimuth, singleAzimuth);
+    rawIMU[0] += caveatron.IMU_a_x; rawIMU[1] += caveatron.IMU_a_y; rawIMU[2] += caveatron.IMU_a_z;
+    rawIMU[3] += caveatron.IMU_m_x; rawIMU[4] += caveatron.IMU_m_y; rawIMU[5] += caveatron.IMU_m_z;
     //if (currentMode==modeShot) ztilt = ztilt + atan2(-ax/rtilt,(ay* sin(singleRoll) + az*cos(singleRoll))/rtilt);
   }
   if (numPoints > 0) AverageCompassData(numPoints);
@@ -28,6 +31,7 @@ void AverageCompassData (int numPoints) {
   inclination = (inclination/numPoints) * 57.29578;
   roll = (roll/numPoints) * 57.29578;
   azimuth = AverageAzimuth(azimuth, numPoints);
+  for (int j=0;j<6;j++) rawIMU[j] /= numPoints;
   //if (currentMode==modeShot) ztilt = (ztilt/numPoints) * 57.29578;
 }
   
@@ -49,12 +53,13 @@ void GetCompassReading() {
 
   //Take a single compass reading
   caveatron.IMU_Read();
-
+  
   //Correct accelerometer for scaling, offset, and misalignment
   ax = acc11*caveatron.IMU_a_x + acc12*caveatron.IMU_a_y + acc13*caveatron.IMU_a_z + acc10;
   ay = acc21*caveatron.IMU_a_x + acc22*caveatron.IMU_a_y + acc23*caveatron.IMU_a_z + acc20;
   az = acc31*caveatron.IMU_a_x + acc32*caveatron.IMU_a_y + acc33*caveatron.IMU_a_z + acc30;
   rtilt = sqrt(pow(ax,2) + pow(ay,2) + pow(az,2));
+  
 }
 
 // Compute the inclination angle value
@@ -157,6 +162,29 @@ void ComputeBoxCorrection() {
   else inclination = adjustInc;
 }
 
+//Error check for frozen IMU - compare current reading with first reading
+uint8_t IMUErrorCheck(boolean startFlag) {
+  uint8_t IMUstatus=0;
+  int16_t lastIMU[6];
+  caveatron.IMU_Read();
+  if (startFlag==true) {
+    firstIMU[0]=caveatron.IMU_a_x; firstIMU[1]=caveatron.IMU_a_y; firstIMU[2]=caveatron.IMU_a_z;
+    firstIMU[3]=caveatron.IMU_m_x; firstIMU[4]=caveatron.IMU_m_y; firstIMU[5]=caveatron.IMU_m_z;
+  } else {
+    lastIMU[0]=caveatron.IMU_a_x; lastIMU[1]=caveatron.IMU_a_y; lastIMU[2]=caveatron.IMU_a_z;
+    lastIMU[3]=caveatron.IMU_m_x; lastIMU[4]=caveatron.IMU_m_y; lastIMU[5]=caveatron.IMU_m_z;
+    if ((lastIMU[0]==firstIMU[0])&&(lastIMU[1]==firstIMU[1])&&(lastIMU[2]==firstIMU[2])) {
+      ErrorBox("Accelerometer", "may be frozen", "", 98); 
+      IMUstatus = 1;
+    }
+    if ((lastIMU[3]==firstIMU[3])&&(lastIMU[4]==firstIMU[4])&&(lastIMU[5]==firstIMU[5])) {
+      ErrorBox("Magnetometer", "may be frozen", "", 98); 
+      if (IMUstatus==1) IMUstatus = 3;
+      else IMUstatus = 2;
+    }
+  }
+  return IMUstatus;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                          Laser Rangefinder Functions

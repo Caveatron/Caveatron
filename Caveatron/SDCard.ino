@@ -40,6 +40,13 @@ void InitSD() {
       streamPositionScans = inFile.tellg();
       inFile.close();
       infoBarMsg = "Survey: "+caveName;
+      //Log startup event
+      //if (OpenLogFileWrite()) {
+          //GetCurrentTime();
+          //logFile << endl;
+          //logFile << "^^" << '\t' << caveatron.BATT_GetLevel() << '\t' << String(timeHour) << String(timeMinute) << String(timeSecond) << endl; //Write battery level and time stamp to log file
+      //}
+      //logFile.close();
     }
   }
 }
@@ -133,72 +140,103 @@ void CreateSurveyFiles() {
     theFile.timestamp(T_WRITE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
     theFile.close();
   }
+
+  // Create Log File
+  fileName = caveCode+dateMonth+dateDay+".log";
+  char _fileNameZ[sizeof(fileName)+1];
+  fileName.toCharArray(_fileNameZ, sizeof(_fileNameZ));
+  if (!theFile.open(_fileNameZ, O_RDWR | O_CREAT)) {
+    ErrorBox("Could Not Create", "Log File", "", 99);    
+  }
+  else {
+    theFile.println(";CAVEATRON LOG FILE");
+    theFile.println(";Serial Number: "+caveatron.serialNumber+" - Firmware version: "+softwareVersion);
+    theFile.println(";"+caveName);
+    theFile.println(";Survey Date: "+dateMonth+'/'+dateDay+"/20"+dateYear);
+    theFile.println();
+    SDWriteCalibrationValues();
+    theFile.timestamp(T_CREATE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+    theFile.timestamp(T_WRITE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+    theFile.close();
+  }
 }
 
 // Open survey and settings files when entering a mode
 boolean OpenSurveyFiles() {
-  boolean fileResult;
-  if (currentMode==modeShot) { 
-    fileName = fileNameBase+".srv";
-    char _fileName[sizeof(fileName)+1];
-    fileName.toCharArray(_fileName, sizeof(_fileName));
-    if (!settingsFile.open("settings.txt", O_RDWR)) {
-      settingsFlag = false;
-      infoBarMsg = "No Settings File";
-      ErrorBox("No Settings", "File Found-", "Start New Survey", 99);
-      fileResult = false;  
-    }
-    else if (!theFile.open(_fileName, O_RDWR | O_AT_END)) {
-      ErrorBox("Could Not Open", "Shot File", "", 99);
-      settingsFile.close();  
-      fileResult = false;  
-    }
-    else {
-      fileResult = true;
-      filePosition = theFile.curPosition();
-    }
-  }
-  else if ((currentMode==modePassage)||(currentMode==modeRoom)) { 
-    fileName = fileNameBase+".cvl";
-    char _fileName[sizeof(fileName)+1];
-    fileName.toCharArray(_fileName, sizeof(_fileName));
-    if (!settingsFile.open("settings.txt", O_RDWR)) {
-      settingsFlag = false;
-      infoBarMsg = "No Settings File";
-      
-      ErrorBox("No Settings", "File Found-", "Start New Survey", 99);
-      fileResult = false;  
-    }
-    else {
+  boolean fileResult = false;
+  char _fileName[sizeof(fileNameBase)+5];
+  switch (currentMode) {
+    case modeShot:
+      fileName = fileNameBase+".srv";
+      fileName.toCharArray(_fileName, sizeof(_fileName));
+      if (!theFile.open(_fileName, O_RDWR | O_AT_END)) {
+        ErrorBox("Could Not Open", "Shot File", "", 99);
+      } 
+      else {
+        filePosition = theFile.curPosition();
+        if (OpenSettingsFileWrite() && OpenLogFileWrite()) fileResult = true;
+      }
+      break;
+    case modePassage:
+    case modeRoom:
+      fileName = fileNameBase+".cvl";
+      fileName.toCharArray(_fileName, sizeof(_fileName));
       lidarFile.open(_fileName, ios::out | ios::app);
       if (!lidarFile.is_open()) {
-        ErrorBox("Could Not Open", "LIDAR File", "", 99);
-        settingsFile.close();  
-        fileResult = false;  
+        ErrorBox("Could Not Open", "LIDAR File", "", 99); 
+      }
+      else {
+        if (OpenSettingsFileWrite() && OpenLogFileWrite()) fileResult = true;
+      }
+      break;
+    case modeSurvey:
+      fileName = fileNameBase+".srv";
+      fileName.toCharArray(_fileName, sizeof(_fileName));
+      inFile.open(_fileName, ios::in);
+      if(inFile.is_open()==false) {
+        ErrorBox("Could Not Open", "Shot File", "", 99);
+      } 
+      else fileResult = true;
+      break;
+    case modeEditSurvey:
+      fileName = fileNameBase+".srv";
+      fileName.toCharArray(_fileName, sizeof(_fileName));
+      if (!theFile.open(_fileName, O_RDWR)) {
+        ErrorBox("Could Not Open", "Shot File", "", 99);
       }
       else fileResult = true;
-    }
+      break;
+    case modeViewScans:
+      fileName = fileNameBase+".log";
+      fileName.toCharArray(_fileName, sizeof(_fileName));
+      if (!theFile.open(_fileName, O_READ)) {
+        ErrorBox("Could Not Open", "Log File", "", 99);
+      }
+      else fileResult = true;
+      break;
   }
-  else if (currentMode==modeSurvey) {
-    fileName = fileNameBase+".srv";
-    char _fileName[sizeof(fileName)+1];
-    fileName.toCharArray(_fileName, sizeof(_fileName));
-    inFile.open(_fileName, ios::in);
-    if(inFile.is_open()==false) {
-      ErrorBox("Could Not Open", "Shot File", "", 99);
-      fileResult = false;
-    }
-  }
-  else if (currentMode==modeEditSurvey) {
-    fileName = fileNameBase+".srv";
-    char _fileName[sizeof(fileName)+1];
-    fileName.toCharArray(_fileName, sizeof(_fileName));
-    if (!theFile.open(_fileName, O_RDWR)) {
-      ErrorBox("Could Not Open", "Shot File", "", 99);
-      fileResult = false;  
-    }
-  }
+  if (fileResult==false) CloseSurveyFiles();
   return fileResult;
+}
+
+//Open Settings File to update values
+boolean OpenSettingsFileWrite() {
+  if (!settingsFile.open("settings.txt", O_RDWR)) {
+    settingsFlag = false;
+    ErrorBox("No Settings", "File Found-", "Start New Survey", 99);
+    return false;
+  } else return true;
+}
+
+// Open Log File as stream for writing
+boolean OpenLogFileWrite() {
+  fileName = fileNameBase+".log";
+  char _fileName[sizeof(fileName)+1];
+  fileName.toCharArray(_fileName, sizeof(_fileName));
+  if (!logFile.open(_fileName, O_RDWR | O_AT_END)) {
+    ErrorBox("Could Not Open", "Log File", "", 99);
+    return false;
+   } else return true;
 }
 
 // Close survey and settings files
@@ -206,6 +244,7 @@ void CloseSurveyFiles() {
   settingsFile.close();  
   theFile.close();
   lidarFile.close();
+  logFile.close();
 }
 
 
@@ -254,6 +293,40 @@ void GetLastScanNum() {
   streamPositionScanLine = 0;
   sta.lastTraverseNum = 0;
   sta.lastSplayNum = 0;
+}
+
+void SDWriteCalibrationValues() {
+  theFile.println(";Accelerometer Calibration");
+  SDWriteCalibrationValueSet(ADDR_ACC_CAL,3,4);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - No LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_NOLID,3,4);
+  theFile.println(";Magnetometer Alignment Calibration - No LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_NOLID,4,1);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - XV LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDXV,3,4);
+  theFile.println(";Magnetometer Alignment Calibration - XV LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDXV,4,1);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - SWEEP LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDSW,3,4);
+  theFile.println(";Magnetometer Alignment Calibration - SWEEP LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDSW,4,1);
+  theFile.println();
+}
+
+
+void SDWriteCalibrationValueSet(uint32_t addr, int xNum, int yNum) {
+  float f;
+  for(int j=0;j<yNum;j++) {
+    for(int i=0;i<xNum;i++) {
+      if ((i==0)&&(j==0)) theFile.print(">");
+      else theFile.print(",");
+      f = caveatron.EEPROM_readFloat((addr+(4*i))+(0x20*j));
+      if (f==0) theFile.print(0.0);
+      else if (abs(f) < 1) theFile.print(double2s(f, 5));
+      else theFile.print(f, 3);
+    }
+  }  
+  theFile.println();  
 }
 
 // Display SD card information

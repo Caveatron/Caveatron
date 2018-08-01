@@ -8,11 +8,9 @@ void SurveyMenuSetup() {
   drawStatusBar("SURVEY PROPERTIES");
   drawInfoBar("SURVEY: "+caveName);
   ctGUI.addButton(20,33,280,66,GREEN_DRK,"NEW SURVEY SETUP",caveatron.FONT_28,optVisible,1);
-  ctGUI.addButton(20,114,280,66,BUTTON_STD,"STATISTICS",caveatron.FONT_28,optVisible,2);
-  ctGUI.addButton(20,195,280,66,BUTTON_STD,"VIEW/DELETE SHOTS",caveatron.FONT_28,optVisible,4);
-  ctGUI.addButton(20,276,280,66,BUTTON_STD,"VIEW LINE PLOT",caveatron.FONT_28,optVisible,3);
-  if(LIDARModule) {
-  }
+  ctGUI.addButton(20,114,280,66,BUTTON_STD,"LINE PLOT",caveatron.FONT_28,optVisible,2);
+  ctGUI.addButton(20,195,280,66,BUTTON_STD,"REVIEW SHOTS/SCANS",caveatron.FONT_28,optVisible,3);
+  ctGUI.addButton(20,276,280,66,BUTTON_STD,"STATISTICS",caveatron.FONT_28,optVisible,4);
   ctGUI.addButton(20,364,280,84,BLUE_STD,"RETURN TO MAIN MENU",caveatron.FONT_28,optVisible,5);
 }
 
@@ -22,14 +20,15 @@ void SurveyMenuHandler(int URN) {
         guiStep++;
         CreateScreen(screenCaveNameEntry);
         break;
-      case 2:                            //Statistics
-        CreateScreen(screenSurveyStats);
-        break;
-      case 3:                            //View Line Plot
+      case 2:                            //View Line Plot
         CreateScreen(screenLinePlot);
         break;
-       case 4:                            //View/Edit Shots
-        CreateScreen(screenShotViewer);
+      case 3:                            //Shot & Scan Review Menu
+        guiStep++;
+        CreateScreen(screenShotScanReview);
+        break;
+      case 4:                            //Statistics
+        CreateScreen(screenSurveyStats);
         break;
       case 5:                            //Exit
         currentMode = modeNull;

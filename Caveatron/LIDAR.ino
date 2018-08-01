@@ -270,6 +270,7 @@ void LIDARViewDisplay_SWEEP() {
 // sets the recording display, and starts the LIDAR hardware.
 void InitializeTraverse() {
   uint8_t LRFstatus;
+  uint32_t filepos;
   char traverseToChar[8], traverseNumChar[8];
   char timeHourChar[3], timeMinuteChar[3], timeSecondChar[3];
   lidarErrorFlag = false;
@@ -280,9 +281,12 @@ void InitializeTraverse() {
   save_count = 0;
   lastangle = 0;
   idx=0;
+  traverseTo.toCharArray(traverseToChar, 8);
+  traverseNum.toCharArray(traverseNumChar, 4);
+  sta.lastTraverseNum = traverseNum.toInt();
+  numTraverses++;
   Serial1Flush();
   delay(500);
-  //currentMode=0;
   caveatron.LRF_Fire();
   ReadCompassData(300);
   LRFstatus = caveatron.LRF_GetRange();
@@ -290,16 +294,18 @@ void InitializeTraverse() {
   distance = caveatron.LRFdistance - caveatron.LIDARFrontDist;
   if ((LRFstatus != 1) || (distance <= 0)) FailedLIDAR(LRFstatus);
   else {
-    traverseTo.toCharArray(traverseToChar, 8);
-    traverseNum.toCharArray(traverseNumChar, 4);
-    sta.lastTraverseNum = traverseNum.toInt();
-    numTraverses++;
+    GetCurrentTime();
     timeHour.toCharArray(timeHourChar, 3); timeMinute.toCharArray(timeMinuteChar, 3); timeSecond.toCharArray(timeSecondChar, 3);
     lidarFile << endl << "#Station: " << traverseToChar << endl;
     lidarFile << "#Traverse: " << traverseNumChar << endl;
     lidarFile << "#Lidar Type: " << int(lidarModuleType) << endl;
     lidarFile << "#Time: " << timeHourChar << ":" << timeMinuteChar << ":" << timeSecondChar << endl << endl;
+    filepos = lidarFile.tellp();
     lidarFile << 'S' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+    logFile.println("##\t"+String(traverseTo)+"\tT\t"+String(traverseNum)+'\t'+String(lidarModuleType)+'\t'+String(filepos));  //Write traverse info to log file
+    logFile.println("#&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
+    logFile.println("#@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
+    IMUErrorCheck(1);
     lastLIDARdistance = distance;
     initLIDARdistance = distance + caveatron.LIDARFrontDist + caveatron.boxRearDist;
     lastLIDARazi = azimuth;
@@ -372,6 +378,7 @@ boolean TakeSplayShot() {
 // In Room mode, when button to start scan is pressed, this function initializes the variables, sets up a new scan in the LIDAR file on the SD card, 
 // sets the recording display, and starts the LIDAR hardware.
 void InitializeSplay() {
+  uint32_t filepos;
   char splayStationChar[8], splayNumChar[8];
   char timeHourChar[3], timeMinuteChar[3], timeSecondChar[3];
   lidarErrorFlag = false;
@@ -388,7 +395,12 @@ void InitializeSplay() {
   lidarFile << "#Splay: " << splayNumChar << endl;
   lidarFile << "#Lidar Type: " << int(lidarModuleType) << endl;
   lidarFile << "#Time: " << timeHourChar << ":" << timeMinuteChar << ":" << timeSecondChar << endl << endl;
+  filepos = lidarFile.tellp();
   lidarFile << 'S' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+  logFile.println("##\t"+String(splayStation)+"\tS\t"+String(splayNum)+'\t'+String(lidarModuleType)+'\t'+String(filepos));  //Write splay info to log file
+  logFile.println("#&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
+  logFile.println("#@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
+  IMUErrorCheck(1);
   delay(1000);
   BuzzerBEEP(800, 500);
   myGLCD.setColor(BLACK_STD);
@@ -747,6 +759,7 @@ boolean GetLIDARDistance() {
 //When scan was successful and ended by pressing the stop scan button
 //Turn off hardware, close file, and display scan statistics
 void EndLIDARScan() {
+  uint8_t IMUstatus;
   lidarFile << flush;
   if (lidarModuleType==2) device.stopScanning();
   delay(250);
@@ -757,6 +770,8 @@ void EndLIDARScan() {
   LRFFlag = false;
   caveatron.LRF_SetMode(0);
   UpdateSettingsFile();
+  IMUstatus = IMUErrorCheck(0);
+  logFile.println("#!\t"+String(0-IMUstatus)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write LRF status code to log file      
   ctGUI.makeObjectInvisible(btn3);
   myGLCD.setColor(BLACK_STD);
   myGLCD.fillRect(14,72,306,93);
@@ -801,10 +816,11 @@ void EndLIDARScan() {
 void FailedLIDAR(int errorCode) {
   //In Room or Passage Mode, marked scan failed and flush data to SD card 
   if (currentMode != modeLIDARView) {   
-    if (errorCode > 8) {
-      lidarFile << 'D' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+    if (errorCode > 8) lidarFile << 'D' <<  '\t' << distance << '\t' << azimuth << '\t' << inclination << '\t' << roll << '\t' << millis() << endl;
+    if (errorCode > 5) {
+      lidarFile << "#FAILED" << endl;
     }
-    if (errorCode > 5) lidarFile << "#FAILED" << endl;
+    logFile.println("#!\t"+String(errorCode)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write error code to log file      
     lidarFile << flush;
   }
   //Shutdown LIDAR and LRF

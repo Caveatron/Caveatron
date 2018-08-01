@@ -1,12 +1,14 @@
-
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 1.01                             //
+//                       Version 1.10                             //
 /******************************************************************/
-// Joe Mitchell, 2018-04-11
+// Joe Mitchell, 2018-07-03
 
 // Change Notes:
-// Fixed bug that caused erronous roll readings during LIDAR scans when holding the unit upside down
+// Added log file for each survey that records calibration parameters, selected raw data, system parameters, and error recording.
+// Added function to view list of LIDAR scans
+// Added function to view plan and profile of LIDAR scans
+// Rearranged Survey menu
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
 #define AUTO_CONFIG 1
@@ -16,7 +18,7 @@ char hardwareRev = 'A';
 char hardwareCode[] = "12221011110";
 uint8_t lidarModuleType;
 
-String softwareVersion = "1.01";
+String softwareVersion = "1.10";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
@@ -80,6 +82,8 @@ int updateStatusBarCount = 1;
 #define screenSurveyStats 31
 #define screenLinePlot 32
 #define screenShotViewer 33
+#define screenScanViewer 34
+#define screenShotScanReview 35
 #define screenAdvancedCal 40
 #define screenRawRecord 41
 #define screenCalShots 42
@@ -97,13 +101,14 @@ int updateStatusBarCount = 1;
 #define modeCalRecCont 32
 #define modeCalShots 33
 #define modeEditSurvey 40
+#define modeViewScans 41
 
 int currentScreen=0;
 int currentMode=0;
 
 //Variables for GUI
 #define URNnull 0
-int pnlTitle, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, txtbox1, pbar1, pbar2;
+int pnlTitle, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, txtbox1, pbar1, pbar2, list1;
 extern uint8_t BigFont[];
 extern uint8_t SmallFont[];
 extern const int sin_table[];
@@ -147,8 +152,8 @@ int idx, LIDAROrientCal;
 float ax, ay, az, rtilt;
 float distance, azimuth, inclination, roll, temperature;
 float accelCal[12], hardIronCal[3], softIronCal[9], mmAmp[4], mmOff[4];
-int16_t sphereCenter[3];
-int ztilt;
+int16_t firstIMU[6], sphereCenter[3];
+int rawIMU[6], ztilt;
 boolean rightFlag = false;
 
 //Variables for Station Codes
@@ -184,9 +189,12 @@ typedef struct
   }  editvector_type;
   editvector_type editVector;
 
+//Variables for Scan List
+int scanPage, numScans;
+
 //Variables for SD Card
-SdFile theFile, settingsFile;
-ifstream inFile;
+SdFile theFile, settingsFile, scanFileA, logFile;
+ifstream inFile, scanFile;
 ofstream outFile, lidarFile;
 uint32_t filePosition, streamPositionData, streamPositionScans, streamPositionScanLine, readPosition;
 boolean SDFlag, settingsFlag;
@@ -399,8 +407,14 @@ void CreateScreen(int screen) {
     case screenLinePlot:
       LinePlotSetup();
       break;
+    case screenShotScanReview:
+      ShotScanReviewSetup();
+      break;
     case screenShotViewer:
       ShotViewerSetup(1);
+      break;
+    case screenScanViewer:
+      ScanViewerSetup(1);
       break;
     case screenTimeUnits:
       TimeUnitsSetup();
@@ -560,8 +574,14 @@ void OnButtonPress(int btnFound){
     case screenSurveyStats:
       SurveyMenuHandler(URN);
       break;
+    case screenShotScanReview:
+      ShotScanReviewHandler(URN);
+      break;
     case screenShotViewer:
       ShotViewerHandler(URN);
+      break;
+    case screenScanViewer:
+      ScanViewerHandler(URN);
       break;
     case screenLinePlot:
       LinePlotHandler(URN);

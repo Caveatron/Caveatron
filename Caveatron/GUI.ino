@@ -384,19 +384,61 @@ void FileNameEntryHandler(int URN) {
   }
 }
 
+//
+
+// ====== double2s(): print out up to 16 digits of input double-precision value
+// This version enables double-precision for Teensy 3, etc.
+// by J.Beale March 2013
+// modified from original float2s() posted by davekw7x on December, 2010
+// http://arduino.cc/forum/index.php/topic,46931.0.html
+
+char * double2s(double f, unsigned int digits) {    
+int d;
+static char s[26];  // formated number as string
+int index=0;
+
+ // handle sign
+ if (f < 0.0)
+ {
+   s[index++] = '-';
+   f = -f;
+ }
+
+ int exponent = int(log10(f));
+ double g = f / pow(10, exponent);
+ if ((g < 1.0) && (g != 0.0))      
+ {
+   g *= 10;
+   exponent--;
+ }
+ g += 0.5 / pow(10,digits);
+ 
+ d = g;  
+ sprintf(&s[index++],"%d",d);  
+ if (digits > 0) sprintf(&s[index++],".");
+ for (int i=0;i<digits;i++) {
+     g = (g - d) * 10.0;  // shift one decimal place to the left
+     d = int(g);
+     sprintf(&s[index++],"%d",d);
+ }
+ sprintf(&s[index], "E%02.2d", exponent);
+ return s;    
+} // ===== end double2s()
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                           Error Box Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
 void ErrorBox(char msgStr1[], char msgStr2[], char msgStr3[], int resetType) {
-  CloseSurveyFiles();
+  if (resetType==99) CloseSurveyFiles();
   myGLCD.setColor(255, 255, 128);
   myGLCD.setBackColor(255, 255, 128);
   myGLCD.fillRect(30, 80, 290, 400);
   myGLCD.setColor(0, 0, 0);
   myGLCD.setFont(BigFont);  
-  myGLCD.print("ERROR!", CENTER, 100);
+  if (resetType==98) myGLCD.print("WARNING:", CENTER, 100);
+  else myGLCD.print("ERROR!", CENTER, 100);
   myGLCD.print(msgStr1, CENTER, 150); myGLCD.print(msgStr2, CENTER, 180); myGLCD.print(msgStr3, CENTER, 210);
   ctGUI.addButton(100,280,120,80,BLUE_STD,"OK",caveatron.FONT_28,optVisible,resetType);
   while (errorFlag==true) delay(10);

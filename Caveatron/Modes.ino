@@ -10,7 +10,7 @@ void TakeShot() {
   float inc = 0;
   float rol = 0;
   String stationFromPrev, stationToPrev;
-  uint8_t LRFstatus = 0;
+  uint8_t LRFstatus = 0, IMUstatus, numGoodShots;
   Timer4.stop();
   myGLCD.setColor(WHITE_STD);
   myGLCD.fillRect(0, 0, 319, 479);
@@ -27,13 +27,11 @@ void TakeShot() {
     azi += azimuth;
     inc += inclination;
     rol += roll;
-
     //Check if roll angle is greater than 30 deg or less then 150 deg (when level)
     if ((fabs(roll) > 90-(cos(inclination/57.3)*60))&&(fabs(roll) < 90+(cos(inclination/57.3)*60))) LRFstatus = 7;
     //Break for error
     if ((LRFFlag==true) && (LRFstatus != 1)) break;
-
-    //delay(200);
+    numGoodShots = i+1;
   }
   if (laserFlag == true) caveatron.LRF_LaserOff();
   if ((LRFstatus==1) && ((fabs(dis[2] - dis[1]) > 0.05) || (fabs(dis[1] - dis[0]) > 0.05) || (fabs(dis[2] - dis[0]) > 0.05))) LRFstatus = 5;
@@ -42,6 +40,7 @@ void TakeShot() {
   azimuth = azi / 3;
   inclination = inc / 3;
   roll = rol / 3;
+  if (LRFstatus==1) IMUstatus = IMUErrorCheck(0);
   myGLCD.clrScr();
   drawInfoBar("Shot Complete");
   
@@ -53,10 +52,12 @@ void TakeShot() {
       stationTo = stationToNew;
       caveatron.LRF_LaserOff();
       caveatron.LRF_PowerOff();
-      drawStatusBar("SHOT MODE");
       temperature = caveatron.RTC_GetTemperature();
       ComputeBoxCorrection();
-      if (LRFstatus == 1) LRFstatus = SaveShotData();
+      if (LRFstatus == 1) LRFstatus = SaveShotData();  //Save shot data to survey file if shot succeeded     
+      logFile.println("$@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
+      logFile.println("$!\t"+String(LRFstatus)+'\t'+String(IMUstatus)+'\t'+String(numGoodShots)+"\tC"); //Write LRF status code to log file      
+      drawStatusBar("SHOT MODE");
       ctGUI.print("STATIONS", 15, 26, caveatron.FONT_28, 3, LEFT_J, YELLOW_STD, BLACK_STD);
       ctGUI.print(stationFrom + " - " + stationTo, 304, 52, caveatron.FONT_34, 4, RIGHT_J, WHITE_STD, BLACK_STD);
       break;
@@ -218,6 +219,7 @@ void ShotModeSetup() {
 
 //Handles button presses
 void ShotModeHandler(int URN) {
+  String outstr;
   switch (URN) {
     case 1:                            //Take Shot
       ctGUI.GUIobject_visible[btn1] = optInvisible;
@@ -226,11 +228,15 @@ void ShotModeHandler(int URN) {
       ctGUI.GUIobject_visible[btn4] = optVisible;
       ctGUI.GUIobject_visible[btn5] = optInvisible;
       ctGUI.GUIobject_visible[btn6] = optInvisible;
+      IMUErrorCheck(1); //Get initial IMU reading for comparison in case of stuck values
+      GetCurrentTime();
+      logFile.println("$$\t"+stationFromNew+'\t'+stationToNew+'\t'+String(rightFlag));  //Write stations to log file
+      logFile.println("$&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
       LRFFlag = true;
       shotFlag = true;
       break;
     case 2:                            //Cancel
-    caveatron.LRF_LaserOff();
+      caveatron.LRF_LaserOff();
       caveatron.LRF_PowerOff();
       laserFlag = false;
       LRFFlag = false;
@@ -243,11 +249,15 @@ void ShotModeHandler(int URN) {
       lengthHoriz -= fabs(distance * cos(inclination / 57.29578));
       lengthVert -= distance * sin(inclination / 57.29578);
       numStations--;
+      logFile.seekCur(-3);
+      logFile.println("R");
       theFile.rewind();
       theFile.seekSet(filePosition);
       CreateScreen(screenShotMode);
       break;
     case 4:                            //Done
+      logFile.seekCur(-3);
+      logFile.println("O");
       CloseSurveyFiles();
       LRFFlag = false;
       currentMode = modeNull;
@@ -281,7 +291,7 @@ uint8_t SaveShotData() {
   char sc1[8], sc2[8];
   float fval, fval1;
   uint8_t saveStatus;
-  
+
   outStr = stationFrom + "\t" + stationTo + "\t" + String(distance) + "\t" + String(azimuth) + "\t" + String(inclination) + "\t;Time: " + String(timeHour) + ":" + String(timeMinute) + ":" + String(timeSecond) + "\t;Roll: " + String(roll);
   outStr.trim();
   theFile.println(outStr);
@@ -403,6 +413,8 @@ void PassageModeHandler(int URN) {
       break;*/
     case 4:                            //Redo
       lidarFile << "#REDO" << endl;
+      logFile.seekCur(-3);
+      logFile.println("R");
       sta.lastTraverseNum--;
       numTraverses--;
       CreateScreen(screenPassageMode);
@@ -412,6 +424,8 @@ void PassageModeHandler(int URN) {
       CreateScreen(screenTraverseEntry);
       break;
     case 6:                            //Done
+      logFile.seekCur(-3);
+      logFile.println("O");
       CloseSurveyFiles();
       LRFFlag = false;
       currentMode = modeNull;
@@ -476,6 +490,8 @@ void RoomModeHandler(int URN) {
       sta.lastSplayNum--;
       numSplays--;
       lidarFile << "#REDO" << endl;
+      logFile.seekCur(-3);
+      logFile.println("R");
       CreateScreen(screenRoomMode);
       break;
     case 5:                            //Another Splay
@@ -483,6 +499,8 @@ void RoomModeHandler(int URN) {
       CreateScreen(screenSplayEntry);
       break;
     case 6:                            //Done
+      logFile.seekCur(-3);
+      logFile.println("O");
       CloseSurveyFiles();
       LRFFlag = false;
       currentMode = modeNull;
@@ -519,6 +537,7 @@ void RoomModeHandler(int URN) {
         ctGUI.makeObjectInvisible(btn2);
         ctGUI.makeObjectInvisible(btn8);
         distance=0; azimuth=0; inclination=0; roll=0;
+        for (int j=0;j<6;j++) rawIMU[j]=0;
         caveatron.LRF_LaserOff();
         caveatron.LRF_PowerOff();
         myGLCD.setColor(BLACK_STD);

@@ -4,9 +4,9 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 
 ## Release Notes
 
-Version: 1.00
+Version: 1.10
 
-Initial Public Release
+Updated to add new function to view completed LIDAR scans on screen, added a log file of system and selected raw survey data to accompany each scan, and other minor changes.
 
 
 ## Instructions for setting up Arduino IDE to compile and install the Caveatron Software

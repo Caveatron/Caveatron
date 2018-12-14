@@ -73,7 +73,7 @@ The final library you will need is the UTFT_GHL library. At the request of the a
 https://www.ebay.com/itm/3-5-inch-TFT-LCD-module-w-Font-IC-480x320-full-angle-arduino-DUE-MEGA-3-2-4-3-/121057702584?hash=item1c2f99f2b8
 
 To obtain the library after you have purchased the display:
-1. Navigate to www.uftghl.com/downloads.php
+1. Navigate to http://www.utftghl.com/downloads.html
 2. Here you will be asked to fill in three fields, which are on a sticker applied to the ColdTears Electronics screen that you bought.
 3. Download the file (warning: the link will be one-time usage, so be sure to keep the file somewhere safe)
 4. The download will be a .7z file. To decompress on Windows you can use 7zip (http://www.7-zip.org) or on a Mac you can use Keka (http://www.kekaosx.com)

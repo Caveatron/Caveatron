@@ -4,6 +4,26 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 
 ## Release Notes
 
+Version: 1.20
+
+CRITICAL NOTES!
+This version requires updating the following libraries: Caveatron_Hardware and LSM303
+This version requires adding the following new library: RPLIDAR'
+Use new Caveatron Parameter Uploader 1.2 and Downloader 1.2 to update calibration parameters in EEPROM before using an RP LIDAR module. If you are not using an RP LIDAR module, you do not need to do this.
+
+Changes since version 1.10:
+- Added RP LIDAR integration for A1M8, A2M8, A2M6, and A3M1. This only functions at a 2 kHz sampling rate, and was only tested on A1M8.     A2M8 and A2M6 should almost certainly work. A3M1 functionality is less certain.
+- RP LIDAR is auto detected with both SENSE1 and SENSE2 pins tied to ground. This requires an additional voltage regulator in LIDAR module to power LIDAR motor at 3.65V for 5 Hz rotation rate.
+- Added new calibration parameter locations on EEPROM for RP LIDAR.
+- Fixed bug that would choose the wrong shot when deleting a shot.
+- Changed method for averaging azimuth readings as previous method produced incorrect value when pointed due north.
+- Redo of a shot now starts with the same box corner selected as the previous shot attempt.
+- Added function to Calibration menu to check the quality of the azimuth calibration.
+- Added support for LIDAR subtypes and settings to .cvl file.
+- Includes update of LSM303 library to increase magnetometer data rate to 12.5 Hz
+- Misc small bug fixes.
+
+
 Version: 1.10
 
 Updated to add new function to view completed LIDAR scans on screen, added a log file of system and selected raw survey data to accompany each scan, and other minor changes.

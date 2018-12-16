@@ -11,6 +11,7 @@ void TakeShot() {
   float rol = 0;
   String stationFromPrev, stationToPrev;
   uint8_t LRFstatus = 0, IMUstatus, numGoodShots;
+  boolean ni = true;
   Timer4.stop();
   myGLCD.setColor(WHITE_STD);
   myGLCD.fillRect(0, 0, 319, 479);
@@ -24,7 +25,8 @@ void TakeShot() {
     ReadCompassData(300);
     if (LRFFlag == true) LRFstatus = caveatron.LRF_GetRange();
     dis[i] = caveatron.LRFdistance;
-    azi += azimuth;
+    if (i==0) if ((azimuth<270)&&(azimuth>90)) ni = false;
+    azi = SumAzimuth (azi, (azimuth/57.29578), ni);
     inc += inclination;
     rol += roll;
     //Check if roll angle is greater than 30 deg or less then 150 deg (when level)
@@ -37,7 +39,7 @@ void TakeShot() {
   if ((LRFstatus==1) && ((fabs(dis[2] - dis[1]) > 0.05) || (fabs(dis[1] - dis[0]) > 0.05) || (fabs(dis[2] - dis[0]) > 0.05))) LRFstatus = 5;
   
   distance = (dis[0] + dis[1] + dis[2]) / 3;
-  azimuth = azi / 3;
+  azimuth = AverageAzimuth(azi, 3);
   inclination = inc / 3;
   roll = rol / 3;
   if (LRFstatus==1) IMUstatus = IMUErrorCheck(0);
@@ -79,7 +81,6 @@ void TakeShot() {
   }
   laserFlag = false;
   shotFlag = false;
-  rightFlag = false;
   Timer4.start();
 }
 
@@ -209,7 +210,13 @@ void ShotModeSetup() {
   btn4 = ctGUI.addButton(124, 357, 180, 94, GREEN_DRK, "DONE", caveatron.FONT_28, optInvisible, 4);
   btn5 = ctGUI.addButton(221, 367, 84, 84, BUTTON_STD, "Use", "Right", caveatron.FONT_22, optVisible, 5);
   btn6 = ctGUI.addButton(15, 367, 84, 84, BUTTON_STD, "Use", "Left", caveatron.FONT_22, optInvisible, 6);
-  DrawLeftArrow();
+  if (rightFlag==true) {
+    ctGUI.GUIobject_visible[btn5] = optInvisible;
+    ctGUI.clearObjectArea(btn5);
+    ctGUI.GUIobject_visible[btn6] = optVisible; 
+    ctGUI.redrawObject(btn6);
+    DrawRightArrow();
+  } else DrawLeftArrow();
   ctGUI.print("Stations:", 15, 35, caveatron.FONT_28, 2, LEFT_J, YELLOW_STD, BLACK_STD);
   ctGUI.print(stationFromNew + " - " + stationToNew, 304, 35, caveatron.FONT_22, 2, RIGHT_J, WHITE_STD, BLACK_STD);
   delay(250);
@@ -240,6 +247,7 @@ void ShotModeHandler(int URN) {
       caveatron.LRF_PowerOff();
       laserFlag = false;
       LRFFlag = false;
+      rightFlag = false;
       CloseSurveyFiles();
       currentMode = modeNull;
       CreateScreen(screenMainMenu);
@@ -260,6 +268,7 @@ void ShotModeHandler(int URN) {
       logFile.println("O");
       CloseSurveyFiles();
       LRFFlag = false;
+      rightFlag = false;
       currentMode = modeNull;
       CreateScreen(screenMainMenu);
       break;

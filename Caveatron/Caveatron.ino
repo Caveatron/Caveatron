@@ -1,14 +1,26 @@
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 1.10                             //
+//                       Version 1.20                             //
 /******************************************************************/
-// Joe Mitchell, 2018-07-03
+// Joe Mitchell, 2018-11-30
 
-// Change Notes:
-// Added log file for each survey that records calibration parameters, selected raw data, system parameters, and error recording.
-// Added function to view list of LIDAR scans
-// Added function to view plan and profile of LIDAR scans
-// Rearranged Survey menu
+// Change Notes(1.15) - not publically released but included in 1.20:
+// Changed method for averaging azimuth readings as previous method produced incorrect value when pointed due north
+// Redo of a shot now starts with the same box corner selected as the previous shot attempt
+// Added function to Calibration menu to check the quality of the azimuth calibration.
+// Added support for LIDAR subtypes and settings to .cvl file.
+// Includes update of LSM303 library to increase magnetometer data rate to 12.5 Hz
+// Misc small fixes
+
+// Change Notes(1.20):
+// CRITICAL: This version requires updating the following libraries: Caveatron_Hardware, LSM303
+// CRITICAL: This version requires the following new library: RPLIDAR
+// Added RP LIDAR integration for A1M8, A2M8, A2M6, and A3M1 (only functions at 2 kHz sampling rate, only tested on A1M8)
+//    RP LIDAR is auto detected with both SENSE1 and SENSE2 pins tied to ground.
+//    Requires additional voltage regulator in LIDAR module to power LIDAR motor at 3.65V for 5 Hz rotation rate.
+// Added new calibration parameter locations on EEPROM for RP LIDAR
+//    Use the new 1.7 versions of the Caveatron_Parameter_Uploader and Downloader to update EEPROM before using an RPLIDAR
+// Fixed bug that would choose the wrong shot when deleting a shot
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
 #define AUTO_CONFIG 1
@@ -17,8 +29,10 @@
 char hardwareRev = 'A';
 char hardwareCode[] = "12221011110";
 uint8_t lidarModuleType;
+uint8_t lidarModuleSubType=0;
+uint8_t lidarModuleConfig=0;
 
-String softwareVersion = "1.10";
+String softwareVersion = "1.20";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
@@ -35,6 +49,7 @@ using namespace Eigen;    // Eigen related statement; simplifies syntax for decl
 #include <MAX17043.h>
 #include <SparkFunBQ27441.h>
 #include <Sweep.h>
+#include <RPLidar.h>
 #if defined(_SAM3XA_)
   #include <DueTimer.h>
 #endif
@@ -87,6 +102,7 @@ int updateStatusBarCount = 1;
 #define screenAdvancedCal 40
 #define screenRawRecord 41
 #define screenCalShots 42
+#define screenCheckCalibration 43
 
 #define modeNull 0
 #define modeShot 1
@@ -139,6 +155,7 @@ int LRFRangeCal;
 
 // Variables for LIDAR
 Sweep device(Serial2);
+RPLidar rplidar;
 //ScanPacket reading;
 boolean LIDARModule = false;
 int LIDARPowerPin, LIDARSensePin1, LIDARSensePin2;
@@ -230,10 +247,16 @@ void setup() {
   delay(500);
   
   //Check for LIDAR Module
-  if (digitalRead(LIDARSensePin1)==LOW) {
+  boolean LIDARsense1 = digitalRead(LIDARSensePin1);
+  boolean LIDARsense2 = digitalRead(LIDARSensePin2);
+  if ((LIDARsense1==LOW)&&(LIDARsense2==LOW)) {
     LIDARModule = true;
-    lidarModuleType = 1;
-  } else if (digitalRead(LIDARSensePin2)==LOW) {
+    lidarModuleType = 3;
+  } else if (LIDARsense1==LOW) {
+    LIDARModule = true;
+    lidarModuleType = 1
+    ;
+  } else if (LIDARsense2==LOW) {
     LIDARModule = true;
     lidarModuleType = 2;
   } else LIDARModule = false;
@@ -280,7 +303,8 @@ void setup() {
   //Configure LIDAR
   if (LIDARModule==true) caveatron.LIDAR_Init(lidarModuleType);
   digitalWrite(LIDARPowerPin, LOW);
-  
+
+  //If USB connected from Caveatron Connect software, start USB connect mode
   if (Serial.available() > 0) {}
   if (Serial.read() == '?') USBConnectMode();
 
@@ -437,6 +461,9 @@ void CreateScreen(int screen) {
       break;
     case screenCompassCalibrate:
       CompassCalibrateSetup();
+      break;
+    case screenCheckCalibration:
+      CheckCalibrationSetup();
       break;
     case screenAdvancedCal:
       AdvancedCalMenuSetup();
@@ -601,6 +628,9 @@ void OnButtonPress(int btnFound){
       break;
     case screenCompassCalibrate:
       CompassCalibrateHandler(URN);
+      break;
+    case screenCheckCalibration:
+      CheckCalibrationHandler(URN);
       break;
     case screenAdvancedCal:
       AdvancedCalMenuHandler(URN);

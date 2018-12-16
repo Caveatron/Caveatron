@@ -1,8 +1,8 @@
 /*****************************************************************/
 //              Caveatron Parameter Downloader                   //
-//                       Version 1.6                            //
+//                       Version 1.2                            //
 /*****************************************************************/
-// Joe Mitchell, 2018-02-26
+// Joe Mitchell, 2018-11-28
 // Used to download calibration parameters from the Caveatron EEPROM
 // After loading, open a Serial Monitor window at 250000 baud to view the parameters
 
@@ -21,11 +21,14 @@
 #define ADDR_MAG_ALIGNCAL_NOLID 0x300   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDXV 0x340   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDSW 0x380   //Uses 2 pages
+#define ADDR_MAG_ALIGNCAL_LIDRP 0x420   //Uses 2 pages
 #define ADDR_MAG_HSCAL_NOLID  0x500     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDXV  0x580     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDSW  0x660     //Uses 4 pages
+#define ADDR_MAG_HSCAL_LIDRP  0x740     //Uses 4 pages
 #define ADDR_LIDXV_ORIENTCAL   0x820     //Uses 1 page
 #define ADDR_LIDSW_ORIENTCAL   0x840     //Uses 1 page
+#define ADDR_LIDRP_ORIENTCAL   0x860     //Uses 1 page
 #define ADDR_LRF_RANGECAL   0x880     //Uses 1 page
 
 
@@ -48,11 +51,14 @@ void setup() {
   DownloadMagnetometerAlignCalNoLid();
   DownloadMagnetometerAlignCalLidarXV();
   DownloadMagnetometerAlignCalLidarSW();
+  DownloadMagnetometerAlignCalLidarRP();
   DownloadMagnetometerHSCalNoLid();
   DownloadMagnetometerHSCalLidarXV();
   DownloadMagnetometerHSCalLidarSW();
+  DownloadMagnetometerHSCalLidarRP();
   DownloadLidarXVOrientCal();
   DownloadLidarSWOrientCal();
+  DownloadLidarRPOrientCal();
   DownloadLRFRangeCal();
 }
 
@@ -163,6 +169,25 @@ void DownloadMagnetometerAlignCalLidarSW() {
   Serial.println();
 }
 
+void DownloadMagnetometerAlignCalLidarRP() {
+  float arr;
+  Serial.println("Magnetometer Alignment Calibration - RP LIDAR Installed");
+  for(int i=0;i<4;i++) {
+    arr = EEPROM_readFloat(ADDR_MAG_ALIGNCAL_LIDRP+(4*i));
+    delay(50);
+    Serial.print(arr,1);
+    Serial.print(",");
+  }
+  for(int i=0;i<4;i++) {
+    arr = EEPROM_readFloat(ADDR_MAG_ALIGNCAL_LIDRP+0x20+(4*i));
+    delay(50);
+    Serial.print(arr,1);
+    if (i<3) Serial.print(",");
+  }
+  Serial.println();
+  Serial.println();
+}
+
 void DownloadMagnetometerHSCalNoLid() {
   float hardIronCal[3], softIronCal[9];
   Serial.println("Magnetometer Hard Iron Calibration - No LIDAR");
@@ -186,7 +211,7 @@ void DownloadMagnetometerHSCalLidarXV() {
   for(int j=0;j<3;j++) {
     for(int i=0;i<3;i++) softIronCal[i+(3*j)] = EEPROM_readFloat(ADDR_MAG_HSCAL_LIDXV+(4*i)+(0x20*(j+1)));
   }
-  Serial.println("Magnetometer Soft Iron Calibration - LIDAR Installed");
+  Serial.println("Magnetometer Soft Iron Calibration - XV11 LIDAR Installed");
   Serial.print(softIronCal[0],7);Serial.print(",");Serial.print(softIronCal[1],7);Serial.print(",");Serial.println(softIronCal[2],7);
   Serial.print(softIronCal[3],7);Serial.print(",");Serial.print(softIronCal[4],7);Serial.print(",");Serial.println(softIronCal[5],7);
   Serial.print(softIronCal[6],7);Serial.print(",");Serial.print(softIronCal[7],7);Serial.print(",");Serial.println(softIronCal[8],7);
@@ -201,7 +226,22 @@ void DownloadMagnetometerHSCalLidarSW() {
   for(int j=0;j<3;j++) {
     for(int i=0;i<3;i++) softIronCal[i+(3*j)] = EEPROM_readFloat(ADDR_MAG_HSCAL_LIDSW+(4*i)+(0x20*(j+1)));
   }
-  Serial.println("Magnetometer Soft Iron Calibration - LIDAR Installed");
+  Serial.println("Magnetometer Soft Iron Calibration - SWEEP LIDAR Installed");
+  Serial.print(softIronCal[0],7);Serial.print(",");Serial.print(softIronCal[1],7);Serial.print(",");Serial.println(softIronCal[2],7);
+  Serial.print(softIronCal[3],7);Serial.print(",");Serial.print(softIronCal[4],7);Serial.print(",");Serial.println(softIronCal[5],7);
+  Serial.print(softIronCal[6],7);Serial.print(",");Serial.print(softIronCal[7],7);Serial.print(",");Serial.println(softIronCal[8],7);
+  Serial.println();
+}
+
+void DownloadMagnetometerHSCalLidarRP() {
+  float hardIronCal[3], softIronCal[9];
+  Serial.println("Magnetometer Hard Iron Calibration - RP LIDAR Installed");
+  for(int i=0;i<3;i++) hardIronCal[i] = EEPROM_readFloat(ADDR_MAG_HSCAL_LIDRP+(4*i));
+  Serial.print(hardIronCal[0],7);Serial.print(",");Serial.print(hardIronCal[1],7);Serial.print(",");Serial.println(hardIronCal[2],7);
+  for(int j=0;j<3;j++) {
+    for(int i=0;i<3;i++) softIronCal[i+(3*j)] = EEPROM_readFloat(ADDR_MAG_HSCAL_LIDRP+(4*i)+(0x20*(j+1)));
+  }
+  Serial.println("Magnetometer Soft Iron Calibration - RP LIDAR Installed");
   Serial.print(softIronCal[0],7);Serial.print(",");Serial.print(softIronCal[1],7);Serial.print(",");Serial.println(softIronCal[2],7);
   Serial.print(softIronCal[3],7);Serial.print(",");Serial.print(softIronCal[4],7);Serial.print(",");Serial.println(softIronCal[5],7);
   Serial.print(softIronCal[6],7);Serial.print(",");Serial.print(softIronCal[7],7);Serial.print(",");Serial.println(softIronCal[8],7);
@@ -222,6 +262,16 @@ void DownloadLidarSWOrientCal() {
   float arr;
   Serial.println("SWEEP LIDAR Orientation Angle Calibration");
   arr = EEPROM_readFloat(ADDR_LIDSW_ORIENTCAL);
+  delay(50);
+  Serial.print(arr,1);
+  Serial.println();
+  Serial.println();
+}
+
+void DownloadLidarRPOrientCal() {
+  float arr;
+  Serial.println("RP LIDAR Orientation Angle Calibration");
+  arr = EEPROM_readFloat(ADDR_LIDRP_ORIENTCAL);
   delay(50);
   Serial.print(arr,1);
   Serial.println();

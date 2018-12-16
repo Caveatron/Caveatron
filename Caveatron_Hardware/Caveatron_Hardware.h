@@ -1,8 +1,8 @@
 /*
   Caveatron_Hardware.h 
-  Version 1.0
+  Version 1.2
   Joe Mitchell
-  2018-02-26
+  2018-11-30
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -34,11 +34,14 @@
 #define ADDR_MAG_ALIGNCAL_NOLID 0x300   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDXV 0x340   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDSW 0x380   //Uses 2 pages
+#define ADDR_MAG_ALIGNCAL_LIDRP 0x420   //Uses 2 pages
 #define ADDR_MAG_HSCAL_NOLID  0x500     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDXV  0x580     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDSW  0x660     //Uses 4 pages
+#define ADDR_MAG_HSCAL_LIDRP  0x740     //Uses 4 pages
 #define ADDR_LIDXV_ORIENTCAL   0x820     //Uses 1 page
 #define ADDR_LIDSW_ORIENTCAL   0x840     //Uses 1 page
+#define ADDR_LIDRP_ORIENTCAL   0x860     //Uses 1 page
 #define ADDR_LRF_RANGECAL   0x880     //Uses 1 page
 
 
@@ -69,7 +72,7 @@ class Caveatron_Hardware
 		uint8_t LRF_Read();
 		uint8_t LRF_GetRange();
 		
-		// LRF Configuration Functions
+		// LIDAR Configuration Functions
 		void LIDAR_Init(uint8_t lidarType);
 		
 		// IMU Compass Functions
@@ -131,9 +134,10 @@ class Caveatron_Hardware
 		int LRFtimeout;	//Time to LRF time out in msec
 		int LRFperiod;	//Minimum time between LRF reading attempts in msec
 		float LIDARFrontDist, LIDARHeight, LIDARLateral;
-		int LIDARAngleOffset, minLIDARrange, maxLIDARrange, maxLIDARsignal, ptsLIDARrot;
+		int LIDARAngleOffset, minLIDARrange, maxLIDARrange, minLIDARsignal, maxLIDARsignal, ptsLIDARrot;
 		int	IMU_a_x, IMU_a_y, IMU_a_z, IMU_m_x, IMU_m_y, IMU_m_z, IMU_g_x, IMU_g_y, IMU_g_z; //Variables to store IMU readings
 		int IMU_hypmin, IMU_hypmax, IMU_hypUbound; //Bounds for magnetometer calibration
+		int magCalStdevScale, magCalDeltaScale;	//Scale factors for display of magnetometer calibration check
 		float boxRearDist, boxLeftDist, boxRightDist, boxBaseDist; //Distances from LRF measurement point to edges of the enclosure
 		int RTCsecond, RTCminute, RTChour, RTCday, RTCmonth, RTCyear;
 		uint8_t BUZZpin, SD_CSpin, SPIspeed;

@@ -310,6 +310,10 @@ void SDWriteCalibrationValues() {
   SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDSW,3,4);
   theFile.println(";Magnetometer Alignment Calibration - SWEEP LIDAR");
   SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDSW,4,1);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - RP LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDRP,3,4);
+  theFile.println(";Magnetometer Alignment Calibration - RP LIDAR");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDRP,4,1);
   theFile.println();
 }
 

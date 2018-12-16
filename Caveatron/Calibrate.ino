@@ -11,9 +11,10 @@ void CalibrateMenuSetup() {
   drawStatusBar("Calibration");
   drawInfoBar("");
   btn1 = ctGUI.addButton(20,33,280,66,BUTTON_STD,"COMPASS CALIBRATION",caveatron.FONT_22,optVisible,1);
-  btn2 = ctGUI.addButton(20,114,280,66,BUTTON_STD,"View Calibration Values",caveatron.FONT_22,optVisible,2);
-  btn3 = ctGUI.addButton(20,195,280,99,BLACK_STD,"Advanced Calibration", "For Expert Use Only",caveatron.FONT_22,optVisible,3);
-  ctGUI.addButton(20,364,280,84,BLUE_STD,"RETURN TO SETTINGS",caveatron.FONT_28,optVisible,5);
+  btn2 = ctGUI.addButton(20,114,280,66,BUTTON_STD,"Check Azimuth Calibration",caveatron.FONT_22,optVisible,2);
+  btn3 = ctGUI.addButton(20,195,280,66,BUTTON_STD,"View Calibration Values",caveatron.FONT_22,optVisible,3);
+  btn4 = ctGUI.addButton(20,276,280,66,BLACK_STD,"Advanced Calibration", "For Expert Use Only",caveatron.FONT_22,optVisible,4);
+  ctGUI.addButton(20,357,280,84,BLUE_STD,"RETURN TO SETTINGS",caveatron.FONT_28,optVisible,5);
 }
 
 void CalibrateMenuHandler(int URN) {
@@ -21,10 +22,13 @@ void CalibrateMenuHandler(int URN) {
       case 1:                            //User Compass Calibration
         CreateScreen(screenCompassCalibrate);
         break;
-      case 2:                            //View Compass Calibration Parameters
+      case 2:                            //Check if Azimuth Calibration is Good
+        CreateScreen(screenCheckCalibration);
+        break;
+      case 3:                            //View Compass Calibration Parameters
         ViewCalParameters();
         break;
-      case 3:                            //Advanced Calibration - for system setup and verification
+      case 4:                            //Advanced Calibration - for system setup and verification
         currentMode = modeRawLive;
         CreateScreen(screenAdvancedCal);
         break;
@@ -351,6 +355,122 @@ void ViewCalParameters() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//            **** CHECK CURRENT AZIMUTH CALIBRATION TO SEE IF IT IS STILL GOOD **** //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+void CheckCalibrationSetup() {
+  drawStatusBar("Check Azi Calibration");
+  drawInfoBar("");
+  btn1 = ctGUI.addButton(20,145,280,200,GREEN_DRK,"START", "CALIBRATION CHECK", caveatron.FONT_28, optVisible, 1);
+  pbar1 = ctGUI.addProgressBar(20,300,280,40,95,"Time Remaining:", caveatron.FONT_22, WHITE_STD, optInvisible, 3);
+  btn2 = ctGUI.addButton(20,364,130,84,RED_DRK,"CANCEL",caveatron.FONT_22, optVisible, 5);
+  btn3 = ctGUI.addButton(20,364,280,84,BLUE_STD,"DONE",caveatron.FONT_22, optInvisible, 6);
+  myGLCD.setColor(YELLOW_STD);
+  myGLCD.setBackColor(BLACK_STD);
+  ctGUI.print("Rotate box, holding level,", 160, 30, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print("slowly in a full circle", 160, 55, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("Time rotation to take", 160, 75, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("about 8 seconds.", 160, 95, caveatron.FONT_19, 2, CENTER_J);
+}
+
+void CheckCalibrationHandler(int URN) {
+    switch (URN) {
+      case 1:                            //Record 1000 Raw Magnetometer and Accelerometer Readings
+        ctGUI.makeObjectInvisible(btn1);
+        ctGUI.makeObjectInvisible(btn5);
+        ctGUI.print("PERFORM ROTATION", 160, 200, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+        ctGUI.makeObjectVisible(pbar1);
+        Timer4.stop();
+        delay(500);
+        BuzzerBEEP(800, 200);
+        delay(500);
+        CheckCalibration();
+        ctGUI.makeObjectVisible(btn6);
+        Timer4.start();
+        break;
+      case 5:                            //Cancel
+      case 6:                            //Done
+        guiStep--;
+        currentMode = modeNull;
+        CreateScreen(screenCalibrate);
+        break;
+  }
+}
+
+void CheckCalibration() {
+  float mgeo[96]; 
+  float sqDevSum = 0.0;
+  float sumVals = 0;
+  float deltaMax = 0;
+  
+  //Calibration Parameters for hard and soft iron
+  float mcc11 = softIronCal[0];
+  float mcc12 = softIronCal[1];
+  float mcc13 = softIronCal[2];
+  float mcc21 = softIronCal[3];
+  float mcc22 = softIronCal[4];
+  float mcc23 = softIronCal[5];
+  float mcc31 = softIronCal[6];
+  float mcc32 = softIronCal[7];
+  float mcc33 = softIronCal[8];
+  float mb1 = hardIronCal[0];
+  float mb2 = hardIronCal[1];
+  float mb3 = hardIronCal[2]; 
+  
+  for (int i=0; i<96; i++) {
+    GetCompassReading();
+    float mroll = measureRoll(0);
+  
+    //Correct mag values for hard and soft iron effects and misalignment
+    float mx = mcc11*(caveatron.IMU_m_x-mb1) + mcc12*(caveatron.IMU_m_y-mb2) + mcc13*(caveatron.IMU_m_z-mb3) + mmOff[0] + mmAmp[0]*cos(mroll);
+    float my = mcc21*(caveatron.IMU_m_x-mb1) + mcc22*(caveatron.IMU_m_y-mb2) + mcc23*(caveatron.IMU_m_z-mb3) + mmOff[1] + mmAmp[1]*cos(mroll);
+    float mz = mcc31*(caveatron.IMU_m_x-mb1) + mcc32*(caveatron.IMU_m_y-mb2) + mcc33*(caveatron.IMU_m_z-mb3) + mmOff[2] + mmAmp[2]*cos(mroll);
+
+    mgeo[i] = sqrt(pow(mx,2) + pow(my,2) + pow(mz,2));
+    sumVals += mgeo[i];
+    ctGUI.updateProgressBar(pbar1, i);
+    delay(83);
+  }
+  BuzzerBEEP(800, 1000);
+  ctGUI.makeObjectInvisible(pbar1);
+  ctGUI.makeObjectVisible(btn3);
+  float avgVals = sumVals/96;
+  
+
+  for(int i=0; i<96; i++) {
+    float dVal = avgVals - mgeo[i];
+    sqDevSum += pow(dVal, 2);
+    if (abs(dVal) > deltaMax) deltaMax = abs(dVal);
+  }
+  float normStDev = caveatron.magCalStdevScale*sqrt(sqDevSum/96)/avgVals;
+  float normdeltaMax = caveatron.magCalDeltaScale*deltaMax/avgVals;
+
+  myGLCD.setColor(BLACK_STD);
+  myGLCD.fillRect(10, 30, 310, 360);
+
+  myGLCD.setColor(WHITE_STD);
+  myGLCD.setBackColor(BLACK_STD);
+  ctGUI.print("AZIMUTH", 160, 30, caveatron.FONT_28, 3, CENTER_J);
+  ctGUI.print("CALIBRATION", 160, 64, caveatron.FONT_28, 3, CENTER_J);
+  ctGUI.print("QUALITY", 160, 98, caveatron.FONT_28, 3, CENTER_J);
+  
+  ctGUI.print("Deviation Factor:", 15, 150, caveatron.FONT_28, 3, LEFT_J);
+  ctGUI.print("Maximum Error:", 15, 210, caveatron.FONT_28, 3, LEFT_J);
+
+  if (normStDev<1.0) myGLCD.setColor(GREEN_STD); //0.7 for SA004
+  else if (normStDev<2.0) myGLCD.setColor(YELLOW_STD);  //1.4 for SA004
+  else myGLCD.setColor(RED_STD);
+  ctGUI.printNumF(normStDev, 2, 240, 150, caveatron.FONT_28, 3, LEFT_J);
+  if (normdeltaMax<1.0) myGLCD.setColor(GREEN_STD); //1.3 for SA004
+  else if (normdeltaMax<2.0) myGLCD.setColor(YELLOW_STD); //2.6 for SA004
+  else myGLCD.setColor(RED_STD);
+  ctGUI.printNumF(normdeltaMax, 2, 240, 210, caveatron.FONT_28, 3, LEFT_J);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //            **** ADVANCED CALIBRATION FUNCTIONS FOR SYSTEM SETUP AND VALIDATION **** //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -553,13 +673,14 @@ boolean waiting=true;
         laserFlag = true;   
         break;
       case 2:               //New
-        theFile.println("*");
+        theFile.println("*L"+String(lidarModuleType));
         theFile.timestamp(T_WRITE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
         LoadCalShots();
         break;
       case 3:               //Take Shot
         float singleInclin, singleRoll, singleAzimuth;
         int axSum, aySum, azSum, mxSum, mySum, mzSum, axAvg, ayAvg, azAvg, mxAvg, myAvg, mzAvg;
+        boolean ni;
         axSum=0; aySum=0; azSum=0; mxSum=0; mySum=0; mzSum=0;
         azimuth=0; inclination=0; roll=0; ztilt = 0;
         BuzzerBEEP(800, 200);
@@ -569,10 +690,12 @@ boolean waiting=true;
           singleRoll = measureRoll(singleInclin);
           singleInclin = measureTilt(singleRoll);
           singleAzimuth = measureHeading(singleInclin, singleRoll);
+          if (i==0) if ((singleAzimuth<4.71239)&&(singleAzimuth>1.5708)) ni = false;
+          else ni = true;
           axSum += caveatron.IMU_a_x; aySum += caveatron.IMU_a_y; azSum += caveatron.IMU_a_z; mxSum += caveatron.IMU_m_x; mySum += caveatron.IMU_m_y; mzSum += caveatron.IMU_m_z;
           roll += singleRoll;
           inclination += -singleInclin; 
-          azimuth = SumAzimuth(azimuth, singleAzimuth);
+          azimuth = SumAzimuth(azimuth, singleAzimuth, ni);
         }
         AverageCompassData(300);
         datetimeStr = "20"+dateYear+"-"+dateMonth+"-"+dateDay+"_"+timeHour+":"+timeMinute+":"+timeSecond;
@@ -681,6 +804,11 @@ void LoadCalibrationParameters() {
         addrMagHSCal = ADDR_MAG_HSCAL_LIDSW;
         addrLidarOrientCal = ADDR_LIDSW_ORIENTCAL;
         break;
+      case 3:
+        addrMagAlignCal = ADDR_MAG_ALIGNCAL_LIDRP;
+        addrMagHSCal = ADDR_MAG_HSCAL_LIDRP;
+        addrLidarOrientCal = ADDR_LIDRP_ORIENTCAL;
+        break;
     }
   } else {
     addrMagAlignCal = ADDR_MAG_ALIGNCAL_NOLID;
@@ -725,6 +853,9 @@ void SaveCalibration() {
         break;
       case 2:
         addrMagHSCal = ADDR_MAG_HSCAL_LIDSW;
+        break;
+      case 3:
+        addrMagHSCal = ADDR_MAG_HSCAL_LIDRP;
         break;
     }
   } else addrMagHSCal = ADDR_MAG_HSCAL_NOLID;

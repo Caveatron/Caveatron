@@ -21,6 +21,8 @@ extern float magAlignCalLidarXV[8] = {-45,80,0,2.9,65,30,0,3.4};
 
 extern float magAlignCalLidarSW[8] = {-60,140,0,2.7,50,90,0,3.6};
 
+extern float magAlignCalLidarRP[8] = {-60,140,0,2.7,50,90,0,3.6};
+
 extern float magCalNoLid[4][3] = {
   {159.7422028,-529.4240723,-852.3153687},
   {0.8084373,-0.0899807,0.0264916},
@@ -42,8 +44,17 @@ extern float magCalLidarSW[4][3] = {
   {0.0263052,0.0116162,0.9962596}
 };
 
+extern float magCalLidarRP[4][3] = {
+  {2328.1503906,-1157.1542969,-373.3346863},
+  {0.8116457,-0.0914898,0.0263052},
+  {-0.0914897,0.9353983,0.0116162},
+  {0.0263052,0.0116162,0.9962596}
+};
+
 extern float lidarXVOrientCal[1] = {304};
 
 extern float lidarSWOrientCal[1] = {0};
+
+extern float lidarRPOrientCal[1] = {0};
 
 extern float LRFRangeCal[1] = {0};

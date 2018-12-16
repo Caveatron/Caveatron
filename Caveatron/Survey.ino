@@ -546,12 +546,12 @@ void LoadShots(int k) {
   numVectorPages = int(ceil(float(numVectors)/7));
 
   if (k > 0) {
-    editVector.st1_e = vector[(k-1)+((vectorPage-1)*7)].st1;
-    editVector.st2_e = vector[(k-1)+((vectorPage-1)*7)].st2;
-    editVector.di_e = vector[(k-1)+((vectorPage-1)*7)].di;
-    editVector.az_e = vector[(k-1)+((vectorPage-1)*7)].az;
-    editVector.in_e = vector[(k-1)+((vectorPage-1)*7)].in;
-    readPosition = vector[(k-1)+((vectorPage-1)*7)].filep;
+    editVector.st1_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].st1;
+    editVector.st2_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].st2;
+    editVector.di_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].di;
+    editVector.az_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].az;
+    editVector.in_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].in;
+    readPosition = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].filep;
   } else {
     if (vectorPage < numVectorPages) ctGUI.makeObjectVisible(btn1);
     else ctGUI.makeObjectInvisible(btn1);

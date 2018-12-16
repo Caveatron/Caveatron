@@ -1,9 +1,9 @@
 /*****************************************************************/
 //              Caveatron Parameter Uploader                     //
-//                       Version 1.6                             //
+//                       Version 1.2                             //
 /*****************************************************************/
-// Joe Mitchell, 2018-02-26
-// Used to upload calibration parameters to the Caveatron EEPROM
+// Joe Mitchell, 2018-11-28
+// Used to Upload Calibration Parameters to the Caveatron EEPROM
 // Fill in your calibration parameters in the "Calibration_Parameters" tab
 
 #include <Wire.h>
@@ -31,13 +31,16 @@ boolean loadAccelCal = 0;           // Accelerometer Offsets and Alignment, 3x4 
 boolean loadMagAlignCalNoLid = 0;   // Magnetometer Alignment, 8x1 float array, No LIDAR
 boolean loadMagAlignCalLidarXV = 1; // Magnetometer Alignment, 8x1 float array, XV11 LIDAR
 boolean loadMagAlignCalLidarSW = 1; // Magnetometer Alignment, 8x1 float array, SWEEP LIDAR
+boolean loadMagAlignCalLidarRP = 1; // Magnetometer Alignment, 8x1 float array, RP LIDAR
 
 boolean loadMagHSCalNoLid = 1;      // **Loaded through internal calibration - Magnetometer Hard and Soft Iron, 3x4 float array, No LIDAR
 boolean loadMagHSCalLidarXV = 1;    // **Loaded through internal calibration - Magnetometer Hard and Soft Iron, 3x4 float array, XV11 LIDAR
 boolean loadMagHSCalLidarSW = 1;    // **Loaded through internal calibration - Magnetometer Hard and Soft Iron, 3x4 float array, SWEEP LIDAR
+boolean loadMagHSCalLidarRP = 1;    // **Loaded through internal calibration - Magnetometer Hard and Soft Iron, 3x4 float array, RP LIDAR
 
 boolean loadLidarXVOrientCal = 0;   // LIDAR Rotation Orientation, 1 float, XV11 LIDAR
 boolean loadLidarSWOrientCal = 0;   // LIDAR Rotation Orientation, 1 float, SWEEP LIDAR
+boolean loadLidarRPOrientCal = 0;   // LIDAR Rotation Orientation, 1 float, RP LIDAR
 
 boolean loadLRFRangeCal = 0;        // LRF Distance, 1 float
 
@@ -52,11 +55,14 @@ boolean loadLRFRangeCal = 0;        // LRF Distance, 1 float
 #define ADDR_MAG_ALIGNCAL_NOLID 0x300   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDXV 0x340   //Uses 2 pages
 #define ADDR_MAG_ALIGNCAL_LIDSW 0x380   //Uses 2 pages
+#define ADDR_MAG_ALIGNCAL_LIDRP 0x420   //Uses 2 pages
 #define ADDR_MAG_HSCAL_NOLID  0x500     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDXV  0x580     //Uses 4 pages
 #define ADDR_MAG_HSCAL_LIDSW  0x660     //Uses 4 pages
+#define ADDR_MAG_HSCAL_LIDRP  0x740     //Uses 4 pages
 #define ADDR_LIDXV_ORIENTCAL   0x820     //Uses 1 page
 #define ADDR_LIDSW_ORIENTCAL   0x840     //Uses 1 page
+#define ADDR_LIDRP_ORIENTCAL   0x860     //Uses 1 page
 #define ADDR_LRF_RANGECAL   0x880     //Uses 1 page
 
 extern char serialNumber[];
@@ -66,11 +72,14 @@ extern float accCal[4][3];
 extern float magAlignCalNoLid[8];
 extern float magAlignCalLidarXV[8];
 extern float magAlignCalLidarSW[8];
+extern float magAlignCalLidarRP[8];
 extern float magCalNoLid[4][3];
 extern float magCalLidarXV[4][3];
 extern float magCalLidarSW[4][3];
+extern float magCalLidarRP[4][3];
 extern float lidarXVOrientCal[1];
 extern float lidarSWOrientCal[1];
+extern float lidarRPOrientCal[1];
 extern float LRFRangeCal[1];
 
 
@@ -85,10 +94,10 @@ void setup() {
   myGLCD.InitLCD(PORTRAIT);
   myGLCD.clrScr();
   myGLCD.setBackColor(0, 0, 0);
-  myGLCD.setFont(BigFont);
+  myGLCD.setFont(SmallFont);
   delay(500);
 
-  int y = 30;
+  int y = 20;
   
   if (loadSerialNum) {
     UploadSerialNumber();
@@ -100,7 +109,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("Serial Num Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadHardwareCode) {
     UploadHardwareCode();
@@ -112,7 +121,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("Hardware Code Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadScreenCal) {
     UploadScreenCal();
@@ -124,7 +133,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("Screen Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadAccelCal) {
     UploadAccelerometerCal();
@@ -136,7 +145,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("Accel Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadMagAlignCalNoLid) {
     UploadMagnetometerAlignCalNoLid();
@@ -148,7 +157,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagA NL Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadMagAlignCalLidarXV) {
     UploadMagnetometerAlignCalLidarXV();
@@ -160,7 +169,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagA LXV Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadMagAlignCalLidarSW) {
     UploadMagnetometerAlignCalLidarSW();
@@ -172,7 +181,19 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagA LSW Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
+  }
+  if (loadMagAlignCalLidarRP) {
+    UploadMagnetometerAlignCalLidarRP();
+    delay(100);
+    if (CheckMagnetometerAlignCalLidarRP()) {
+      myGLCD.setColor(0, 255, 0);
+      myGLCD.print("MagA LRP Cal Loaded", CENTER, y);
+    } else {
+      myGLCD.setColor(255, 0, 0);
+      myGLCD.print("MagA LRP Cal Failed", CENTER, y);
+    }
+    y=y+20;
   }
   if (loadMagHSCalNoLid) {
     UploadMagnetometerHSCalNoLid();
@@ -184,7 +205,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagHS NL Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadMagHSCalLidarXV) {
     UploadMagnetometerHSCalLidarXV();
@@ -196,7 +217,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagHS LXV Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadMagHSCalLidarSW) {
     UploadMagnetometerHSCalLidarSW();
@@ -208,7 +229,19 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("MagHS LSW Cal Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
+  }
+  if (loadMagHSCalLidarRP) {
+    UploadMagnetometerHSCalLidarRP();
+    delay(100);
+    if (CheckMagnetometerHSCalLidarRP()) {      
+      myGLCD.setColor(0, 255, 0);
+      myGLCD.print("MagHS LRP Cal Loaded", CENTER, y);
+    } else {
+      myGLCD.setColor(255, 0, 0);
+      myGLCD.print("MagHS LRP Cal Failed", CENTER, y);
+    }
+    y=y+20;
   }
   if (loadLidarXVOrientCal) {
     UploadLidarXVOrientCal();
@@ -220,7 +253,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("LIDARXV Orient Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   if (loadLidarSWOrientCal) {
     UploadLidarSWOrientCal();
@@ -232,7 +265,19 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("LIDARSW Orient Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
+  }
+  if (loadLidarRPOrientCal) {
+    UploadLidarRPOrientCal();
+    delay(100);
+    if (CheckLidarRPOrientCal()) {
+      myGLCD.setColor(0, 255, 0);
+      myGLCD.print("LIDARRP Orient Loaded", CENTER, y);
+    } else {
+      myGLCD.setColor(255, 0, 0);
+      myGLCD.print("LIDARRP Orient Failed", CENTER, y);
+    }
+    y=y+20;
   }
   if (loadLRFRangeCal) {
     UploadLRFRangeCal();
@@ -244,7 +289,7 @@ void setup() {
       myGLCD.setColor(255, 0, 0);
       myGLCD.print("LRF Range Failed", CENTER, y);
     }
-    y=y+30;
+    y=y+20;
   }
   myGLCD.setColor(255, 255, 255);
   myGLCD.print("DONE", CENTER, y);
@@ -299,6 +344,14 @@ void UploadMagnetometerAlignCalLidarSW() {
   EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDSW+0x20, arrayBuffer, 4);
 }
 
+void UploadMagnetometerAlignCalLidarRP() {
+  float arrayBuffer[4];
+  for(int i=0;i<4;i++) arrayBuffer[i] = magAlignCalLidarRP[i];
+  EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDRP, arrayBuffer, 4);
+  for(int i=0;i<4;i++) arrayBuffer[i] = magAlignCalLidarRP[i+4];
+  EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDRP+0x20, arrayBuffer, 4);
+}
+
 void UploadMagnetometerHSCalNoLid() {
   float arrayBuffer[3];
   for(int i=0;i<4;i++) {
@@ -323,12 +376,24 @@ void UploadMagnetometerHSCalLidarSW() {
   }
 }
 
+void UploadMagnetometerHSCalLidarRP() {
+  float arrayBuffer[3];
+  for(int i=0;i<4;i++) {
+    for(int j=0;j<3;j++) arrayBuffer[j] = magCalLidarRP[i][j];
+    EEPROM_writeFloatArray(ADDR_MAG_HSCAL_LIDRP+(i*0x20), arrayBuffer, 3);
+  }
+}
+
 void UploadLidarXVOrientCal() {
   EEPROM_writeFloatArray(ADDR_LIDXV_ORIENTCAL, lidarXVOrientCal, 1);
 }
 
 void UploadLidarSWOrientCal() {
   EEPROM_writeFloatArray(ADDR_LIDSW_ORIENTCAL, lidarSWOrientCal, 1);
+}
+
+void UploadLidarRPOrientCal() {
+  EEPROM_writeFloatArray(ADDR_LIDRP_ORIENTCAL, lidarRPOrientCal, 1);
 }
 
 void UploadLRFRangeCal() {
@@ -410,6 +475,17 @@ boolean CheckMagnetometerAlignCalLidarSW() {
   return 1;
 }
 
+boolean CheckMagnetometerAlignCalLidarRP() {
+  float arr[8];
+  for(int i=0;i<4;i++) {
+    arr[i] = EEPROM_readFloat(ADDR_MAG_ALIGNCAL_LIDRP+(4*i));
+    arr[i+4] = EEPROM_readFloat(ADDR_MAG_ALIGNCAL_LIDRP+0x20+(4*i));
+    delay(50);
+  }
+  for(int i=0;i<8;i++) if (arr[i]!=magAlignCalLidarRP[i]) return 0;
+  return 1;
+}
+
 boolean CheckMagnetometerHSCalNoLid() {
   float arr[12];
   for(int j=0;j<4;j++) {
@@ -458,6 +534,22 @@ boolean CheckMagnetometerHSCalLidarSW() {
   return 1;
 }
 
+boolean CheckMagnetometerHSCalLidarRP() {
+  float arr[12];
+  for(int j=0;j<4;j++) {
+    for(int i=0;i<3;i++) {
+      arr[i+(3*j)] = EEPROM_readFloat((ADDR_MAG_HSCAL_LIDRP+(4*i))+(0x20*j));
+      delay(50);
+    }
+  }
+  for(int j=0;j<4;j++) {
+    for(int i=0;i<3;i++) {
+      if (arr[i+(3*j)]!=magCalLidarRP[j][i]) return 0;
+    }
+  }
+  return 1;
+}
+
 boolean CheckLidarXVOrientCal() {
   float arr[1];
   arr[0] = EEPROM_readFloat(ADDR_LIDXV_ORIENTCAL);
@@ -471,6 +563,14 @@ boolean CheckLidarSWOrientCal() {
   arr[0] = EEPROM_readFloat(ADDR_LIDSW_ORIENTCAL);
   delay(50);
   if (arr[0]!=lidarSWOrientCal[0]) return 0;
+  return 1;
+}
+
+boolean CheckLidarRPOrientCal() {
+  float arr[1];
+  arr[0] = EEPROM_readFloat(ADDR_LIDRP_ORIENTCAL);
+  delay(50);
+  if (arr[0]!=lidarRPOrientCal[0]) return 0;
   return 1;
 }
 

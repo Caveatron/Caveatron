@@ -1,8 +1,8 @@
 /*
   Caveatron_GUI.h 
-  Version 0.95a
+  Version 1.3
   Joe Mitchell
-  2017-10-17
+  2019-02-07
   
   This library contains the functions related to the Caveatron GUI including creating standard user interface controls and displays, and printing text.
   The library also has functions to handle general GUI operations such as setting/clearing displays of GUI object and setting GUI object parameters.
@@ -13,19 +13,8 @@
 #define Caveatron_GUI_h
 
 #include "Caveatron_Hardware.h"
-#include <URTouch.h> //For firmware 0.9g, 0.95b and later
-//#include <UTouch_Caveatron.h> //Edited for firmware 0.9d, 0.9e, 0.9f, and 0.95a
-//#include <UTouch.h> //Uncomment for firmware 0.9c and earlier
+#include <URTouch.h>
 #include <UTFT.h>
-#include <UTFT_CTE.h>
-//#include <UTFT_GHL.h>
-
-
-#include "Arduino.h"
-
-
-//#define GUI_Handler TC3_Handler
-//#define GUI_timer TC3_IRQn
 
 
 #define LEFT_J 0
@@ -73,7 +62,6 @@
 #define GREEN_DRK		0x04A0
 #define BLUE_STD		0x001F
 #define YELLOW_STD		0xFFE0
-//#define BUTTON_STD		0x6414
 #define BUTTON_DRK		0x3A6B	//58,76,94
 #define BUTTON_STD		0x5371	//85,110,136
 #define BUTTON_LGT		0xADFA
@@ -86,7 +74,7 @@
 #define GREEN_BAR		0x2F28 //43,229,64
 #define TAN_STD			0xC5B3 //194,181,155
 #define	TAN_LGT			0xFF79 //255,238,204
-
+#define	TAN_DRK			0x7B69 //124,108,76
 
 class Caveatron_GUI
 {
@@ -125,9 +113,6 @@ class Caveatron_GUI
   	void    restoreColors();
   	void    updatingScreen();
   	void    finishedUpdatingScreen();
-  	void    startTimer(Tc *tc, uint32_t channel, IRQn_Type irq, uint32_t frequency);
-  	void    stopTimer();
-  	void    restartTimer();
   	void    ClearObjects(int first,int last);
   	void    clearAllObjects(); 
 	void	clearObjectArea(int objectNumber);

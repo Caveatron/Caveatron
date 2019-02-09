@@ -1,15 +1,14 @@
 /*
   Caveatron_GUI.cpp 
-  Version 0.99
+  Version 1.3
   Joe Mitchell
-  2018-01-25
+  2019-01-24
   
   This library contains the functions related to the Caveatron GUI including creating standard user interface controls and displays, and printing text.
   The library also has functions to handle general GUI operations such as setting/clearing displays of GUI object and setting GUI object parameters.
 */
 
 
-#include "Arduino.h"
 #include "Caveatron_GUI.h"
 
 
@@ -848,13 +847,11 @@ void Caveatron_GUI::restoreColors(){
 
 
 void Caveatron_GUI::updatingScreen(){
-  //stopTimer();
   preserveColors();
 }
 
 void Caveatron_GUI::finishedUpdatingScreen(){
   restoreColors();
-  //restartTimer();
 }
 
 bool Caveatron_GUI::withinBounds(int chkX,int chkY,int X, int Y, int X2, int Y2){

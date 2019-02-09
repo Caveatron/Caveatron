@@ -1,8 +1,8 @@
 /*
   Caveatron_Hardware.h 
-  Version 1.2
+  Version 1.3
   Joe Mitchell
-  2018-11-30
+  2019-01-24
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -15,12 +15,17 @@
 #include <UTFT.h>
 #include <URTouch.h>
 #include <UTFT_CTE.h>
-#include <UTFT_GHL.h>
+#if defined(_SAM3XA_)	//for Arduino Due
+	#include <UTFT_GHL.h>
+#endif
 
 #include <LSM303.h>
 #include <MAX17043.h>
 #include <SparkFunBQ27441.h>
-#include "Arduino.h"
+#if defined (__MK64FX512__) || defined (__MK66FX1M0__) //for Teensy 3.5/3.6
+	#include <TimeLib.h>
+	#include <EEPROM.h>
+#endif
 
 #define DS3231_ADDRESS 0x68
 #define AT24C32_EEPROM_ADDR 0x57
@@ -151,6 +156,8 @@ class Caveatron_Hardware
 		byte decToBcd(byte val);
 		void Write_AT24Cxx_Page(int iAddr, byte* iData, int iLength);
 		int Read_AT24Cxx_Byte(int iAddr);
+		void Write_EEPROM_Bytes(int iAddr, byte* iData, int iLength);
+		int Read_EEPROM_Byte(int iAddr);
 	
 		// Hardware variables
         char hardwareRev;
@@ -182,7 +189,9 @@ class Caveatron_Hardware
 		UTFT    * mylcd;
         URTouch  * mytouch;
 		UTFT_CTE * myFont_CTE;
-		UTFT_GHL * myFont_GHL;
+		#if defined(_SAM3XA_)	//for Arduino Due
+			UTFT_GHL * myFont_GHL;
+		#endif
 		LSM303 compass;
 };
 

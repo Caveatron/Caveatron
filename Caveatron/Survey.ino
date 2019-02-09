@@ -66,6 +66,8 @@ void PlotSurvey() {
   int sX, sY, cX, cY, offsetText;
   float sXscale, sYscale, sXoffset, sYoffset, plotScale;
   String plotTypeText, dirText, groupStr;
+  char note[22];
+  boolean bkSight;
 
   float maxCoordX[10];
   float minCoordX[10];
@@ -106,12 +108,12 @@ void PlotSurvey() {
   myGLCD.fillRect(200,0,319,18);
   
   uint32_t curReadPos;
-  char linebuffer[66];
+  char linebuffer[91];
   fileFlag = OpenSurveyFiles();
-  for (int i=0;i<7;i++) inFile.getline(linebuffer, 65, '\n');
+  for (int i=0;i<7;i++) inFile.getline(linebuffer, 90, '\n');
   while((inFile.eof() == false)&&(inFile.peek()>=0)) { 
     if (inFile.peek()!=';') {
-      inFile >> station1 >> station2 >> vector[vectorCount].di >> vector[vectorCount].az >> vector[vectorCount].in;
+      inFile >> station1 >> station2 >> vector[vectorCount].di >> vector[vectorCount].az >> vector[vectorCount].in >> note;
       vector[vectorCount].st1 = String(station1);
       vector[vectorCount].st2 = String(station2);
       vector[vectorCount].group = 0;
@@ -124,9 +126,11 @@ void PlotSurvey() {
       Serial.print(vector[vectorCount].az);
       Serial.print(",");
       Serial.println(vector[vectorCount].in);*/
-      if (vector[vectorCount].di >= 0) vectorCount++;
+      if ((note[0] == '#') && (note[1] == 'S')) bkSight = true; //Do not include in plot if shot flagged as a backsight
+      else bkSight = false;
+      if ((vector[vectorCount].di >= 0) && (bkSight == false)) vectorCount++;
     }
-    inFile.getline(linebuffer, 65, '\n');
+    inFile.getline(linebuffer, 90, '\n');
   }
   inFile.close();
   
@@ -509,7 +513,7 @@ void ShotViewerHandler(int URN) {
 void LoadShots(int k) {
   int listboxTop = 26;
   int numVectorPages, vectorsPerPage=7, vectorCount=0;
-  char st1_in[8], st2_in[8];
+  char st1_in[8], st2_in[8], note_in[22];
   float di_in, az_in, in_in;
   
   typedef struct
@@ -519,27 +523,30 @@ void LoadShots(int k) {
       String di;
       String az;
       String in;
+      boolean bk;
       uint32_t filep; 
   }  vector_type;
   vector_type vector[92];
   
   uint32_t curReadPos;
-  char linebuffer[66];
+  char linebuffer[91];
 
   fileFlag = OpenSurveyFiles();
-  for (int i=0;i<8;i++) inFile.getline(linebuffer, 65, '\n');
+  for (int i=0;i<9;i++) inFile.getline(linebuffer, 90, '\n');
   while((inFile.eof() == false)&&(inFile.peek()>=0)&&(vectorCount<91)) { 
     vector[vectorCount].filep = inFile.tellg();
     if (inFile.peek()!=';') {
-      inFile >> st1_in >> st2_in >> di_in >> az_in >> in_in;
+      inFile >> st1_in >> st2_in >> di_in >> az_in >> in_in >> note_in;
       vector[vectorCount].st1 = String(st1_in);
       vector[vectorCount].st2 = String(st2_in);
       vector[vectorCount].di = String(di_in, 2);
       vector[vectorCount].az = String(az_in, 1);
       vector[vectorCount].in = String(in_in, 1);
+      if ((note_in[0] == '#') && (note_in[1] == 'S')) vector[vectorCount].bk = true;
+      else vector[vectorCount].bk = false;
       vectorCount++;
     }
-    inFile.getline(linebuffer, 65, '\n');
+    inFile.getline(linebuffer, 90, '\n');
   }
   inFile.close();
   numVectors = vectorCount;
@@ -551,6 +558,7 @@ void LoadShots(int k) {
     editVector.di_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].di;
     editVector.az_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].az;
     editVector.in_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].in;
+    editVector.bk_e = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].bk;
     readPosition = vector[(numVectors-1)-(k-1)-((vectorPage-1)*7)].filep;
   } else {
     if (vectorPage < numVectorPages) ctGUI.makeObjectVisible(btn1);
@@ -570,10 +578,11 @@ void LoadShots(int k) {
       }
     }
     
-    myGLCD.setColor(WHITE_STD);
     myGLCD.setBackColor(BUTTON_DRK);
-    if (vectorPage==numVectorPages) vectorsPerPage = numVectors%7;
+    if (vectorPage==numVectorPages) vectorsPerPage = 1+((numVectors-1)%7);
     for (int i=0; i<vectorsPerPage; i++) {
+      if (vector[numVectors-(i+((vectorPage-1)*7))-1].bk == true) myGLCD.setColor(TAN_STD);
+      else myGLCD.setColor(WHITE_STD);
       ctGUI.print(vector[numVectors-(i+((vectorPage-1)*7))-1].st1, 13, 50*i+(listboxTop+37), caveatron.FONT_19, 2);
       ctGUI.print(vector[numVectors-(i+((vectorPage-1)*7))-1].st2, 74, 50*i+(listboxTop+37), caveatron.FONT_19, 2);
       ctGUI.print(vector[numVectors-(i+((vectorPage-1)*7))-1].di, 135, 50*i+(listboxTop+37), caveatron.FONT_19, 2);
@@ -593,7 +602,7 @@ void DeleteShot() {
   currentMode = modeEditSurvey;
   myGLCD.setColor(127, 127, 0);
   myGLCD.setBackColor(127, 127, 0);
-  myGLCD.fillRect(30, 80, 290, 270);
+  myGLCD.fillRect(30, 90, 290, 270);
   myGLCD.setColor(WHITE_STD);
   ctGUI.print("Really delete", 160, 90, caveatron.FONT_22, 2, CENTER_J);
   ctGUI.print("shot "+editVector.st1_e+" - "+editVector.st2_e+"?", 160, 122, caveatron.FONT_22, 2, CENTER_J);
@@ -835,7 +844,7 @@ void ViewScan (uint32_t fp, const int nr, char stype, String stext) {
       ibufstream ibuf(linebuffer);
       ibuf >> cin >> scanDis >> scanAzi >> scanInc >> scanRol >> iin;
       //If fixed point, interpolate distance for all scans back to last fixed point
-      if (scanDis>0) {
+      if ((scanDis>0)&&(scanInc<999)&&(scanAzi<999)) {
         for(int i=0;i<(rotCount-fixedRotCount);i++) {
           int pointScanDis = 1000*(lastScanDis-i*((lastScanDis-scanDis)/(rotCount-fixedRotCount)));
           float pointScanInc = lastScanInc-i*((lastScanInc-scanInc)/(rotCount-fixedRotCount));
@@ -866,18 +875,19 @@ void ViewScan (uint32_t fp, const int nr, char stype, String stext) {
     else {
       ibufstream ibuf(linebuffer);
       ibuf >> ptAngle >> ptRange >> ptSense;
-      ptAngle = ptAngle-scanRol;
+      ptAngle = ptAngle + scanRol;
       if (ptAngle<0) ptAngle=360+ptAngle; if (ptAngle>360) ptAngle=ptAngle-360;
-      if (((ptAngle <= 1) || (ptAngle >= 359)) && (ptSense > 16)) {
+      //if (((ptAngle <= 1) || (ptAngle >= 359)) && (ptSense > caveatron.minLIDARsignal) && (ptSense < caveatron.maxLIDARsignal)) {
+      if ((ptAngle <= 1) || (ptAngle >= 359)) {
         scanPointUp[rotCount][0] = ptRange * sin(scanInc/57.2958); scanPointUp[rotCount][1] = ptRange * cos(scanInc/57.2958);
       }
-      if ((abs(90 - ptAngle) <= 1) && (ptSense > 16)) {
+      if (abs(90 - ptAngle) <= 1) {
         scanPointLt[rotCount][0] = ptRange * sin((scanAzi-90)/57.2958); scanPointLt[rotCount][1] = ptRange * cos((scanAzi-90)/57.2958);
       }
-      if ((abs(180 - ptAngle) <= 1) && (ptSense > 16)) {
+      if (abs(180 - ptAngle) <= 1) {
         scanPointDn[rotCount][0] = ptRange * sin((scanInc+180)/57.2958); scanPointDn[rotCount][1] = ptRange * cos((scanInc+180)/57.2958);
       }
-      if ((abs(270 - ptAngle) <= 1) && (ptSense > 16)) {
+      if (abs(270 - ptAngle) <= 1) {
         scanPointRt[rotCount][0] = ptRange * sin((scanAzi+90)/57.2958); scanPointRt[rotCount][1] = ptRange * cos((scanAzi+90)/57.2958);
       }
     }
@@ -964,17 +974,16 @@ void ViewScan (uint32_t fp, const int nr, char stype, String stext) {
         myGLCD.fillCircle(rangeCenter[0],rangeCenter[1],radius+2);
       } 
       else if (stype=='S') {
+        //Draw Room mode plan view left wall
         myGLCD.setColor(GREEN_STD);
         for (int i=0; i<=rotCount; i++) {
-          ptx = 159-(scanPointLt[i][0]/rangeScale); pty = 178+(scanPointLt[i][1]/rangeScale);
-          //if (((ptx>0)&&(ptx<319))&&((pty>19)&&(pty<346))) myGLCD.drawPixel(ptx, pty);
+          ptx = 159-(scanPointRt[i][0]/rangeScale); pty = 178+(scanPointRt[i][1]/rangeScale);
           if (((ptx>0)&&(ptx<319))&&((pty>19)&&(pty<346))) myGLCD.fillCircle(ptx, pty, radius);
-          
         }
         //Draw station and rotation point
         myGLCD.setColor(YELLOW_STD);
         myGLCD.fillCircle(159,178,radius+2);
-        ptx = 159+((1000*firstScanDis*sin(firstScanAzi/57.2958))/rangeScale); pty = 178+((1000*firstScanDis*cos(firstScanAzi/57.2958))/rangeScale);
+        ptx = 159+((1000*firstScanDis*sin(firstScanAzi/57.2958))/rangeScale); pty = 178-((1000*firstScanDis*cos(firstScanAzi/57.2958))/rangeScale);
         myGLCD.setColor(RED_STD);
         if (((ptx>0)&&(ptx<319))&&((pty>19)&&(pty<346))) myGLCD.fillCircle(ptx,pty,radius+2);
       }

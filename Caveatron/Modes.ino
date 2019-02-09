@@ -11,7 +11,6 @@ void TakeShot() {
   float rol = 0;
   String stationFromPrev, stationToPrev;
   uint8_t LRFstatus = 0, IMUstatus, numGoodShots;
-  boolean ni = true;
   Timer4.stop();
   myGLCD.setColor(WHITE_STD);
   myGLCD.fillRect(0, 0, 319, 479);
@@ -25,8 +24,7 @@ void TakeShot() {
     ReadCompassData(300);
     if (LRFFlag == true) LRFstatus = caveatron.LRF_GetRange();
     dis[i] = caveatron.LRFdistance;
-    if (i==0) if ((azimuth<270)&&(azimuth>90)) ni = false;
-    azi = SumAzimuth (azi, (azimuth/57.29578), ni);
+    azi = SumAzimuth (azi, (azimuth/57.29578));
     inc += inclination;
     rol += roll;
     //Check if roll angle is greater than 30 deg or less then 150 deg (when level)
@@ -61,7 +59,11 @@ void TakeShot() {
       logFile.println("$!\t"+String(LRFstatus)+'\t'+String(IMUstatus)+'\t'+String(numGoodShots)+"\tC"); //Write LRF status code to log file      
       drawStatusBar("SHOT MODE");
       ctGUI.print("STATIONS", 15, 26, caveatron.FONT_28, 3, LEFT_J, YELLOW_STD, BLACK_STD);
-      ctGUI.print(stationFrom + " - " + stationTo, 304, 52, caveatron.FONT_34, 4, RIGHT_J, WHITE_STD, BLACK_STD);
+      if (backSight==true) {
+        ctGUI.print(stationFrom + " - " + stationTo + " (B)", 304, 52, caveatron.FONT_34, 3, RIGHT_J, TAN_STD, BLACK_STD);
+        stationFrom = stationFromPrev;
+        stationTo = stationToPrev;
+      } else ctGUI.print(stationFrom + " - " + stationTo, 304, 52, caveatron.FONT_34, 3, RIGHT_J, WHITE_STD, BLACK_STD);
       break;
     case modeManual:
       drawStatusBar("MANUAL MODE");
@@ -118,6 +120,7 @@ void ShotFailed(uint8_t LRFstatus) {
 
 //Station Names User Entry Setup for Shot, Passage, and Room Modes
 void StationEntrySetup() {
+  String stationEntry = stationTo;
   ctGUI.print("Enter Station", 159, 25, caveatron.FONT_22, 2, CENTER_J, YELLOW_STD, BLACK_STD);
   CreateLetterPad(117);
   CreateNumberPad(315);
@@ -129,12 +132,16 @@ void StationEntrySetup() {
     btn2 = ctGUI.addButton(1, 24, 84, 84, BLUE_STD, "DELETE", caveatron.FONT_22, optVisible, 2);
     btn3 = ctGUI.addButton(1, 24, 84, 84, RED_STD, "CANCEL", caveatron.FONT_22, optInvisible, 3);
   }
-  txtbox1 = ctGUI.addTextInputBox(90, 75, 140, 33, stationTo, caveatron.FONT_22, 2, CENTER_J, BLACK_STD, 7, optVisible, 0);
-  if (ctGUI.GUIobject_data1[txtbox1] != 0) ctGUI.toggleButton(btn2, btn3);
   if (currentMode == modeShot) {
+    stationEntry = "";
     drawStatusBar("SHOT MODE");
-    drawInfoBar("Last Shot: " + stationFrom + " - " + stationTo);
-    ctGUI.print("FROM", 159, 50, caveatron.FONT_22, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+    if (guiStep==1) {
+      drawInfoBar("Last Shot: " + stationFrom + " - " + stationTo);
+      ctGUI.print("FROM", 159, 50, caveatron.FONT_22, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+    } else if (guiStep==2) {
+      drawInfoBar("From Station:  "+stationFromNew);
+      ctGUI.print("   TO   ",159, 50, caveatron.FONT_22, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+    }
   } 
   else if (currentMode == modePassage) {
     drawStatusBar("PASSAGE MODE");
@@ -145,6 +152,105 @@ void StationEntrySetup() {
     drawStatusBar("ROOM MODE");
     drawInfoBar("Last Shot: " + stationFrom + " - " + stationTo);
     ctGUI.print("SPLAY", 159, 50, caveatron.FONT_22, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+  }
+  txtbox1 = ctGUI.addTextInputBox(90, 75, 140, 33, stationEntry, caveatron.FONT_22, 2, CENTER_J, BLACK_STD, 7, optVisible, 0);
+  if (ctGUI.GUIobject_data1[txtbox1] != 0) ctGUI.toggleButton(btn2, btn3);
+}
+
+//Preselection screen for Shot station type and name
+void ShotStationSetup() {
+  if (numStations==0) CreateScreen(screenStationEntry); //For the first station, skip directly to station entry screen
+  else {
+    stationNext = PredictNextStation(stationTo); 
+    if (stationNext!="0") ctGUI.addButton(170, 64, 135, 68, GREEN_DRK, stationTo+" - "+stationNext, caveatron.FONT_22, optVisible, 1);
+    ctGUI.addButton(15, 142, 135, 68, GREEN_DRK, stationTo+" - ___", caveatron.FONT_22, optVisible, 2);
+    ctGUI.addButton(170, 142, 135, 68, GREEN_DRK, "___ - ___", caveatron.FONT_22, optVisible, 3);
+    ctGUI.addButton(170, 226, 135, 68, TAN_DRK, stationTo+" - "+stationFrom, caveatron.FONT_22, optVisible, 4);
+    ctGUI.addButton(15, 304, 135, 68, TAN_DRK, stationFrom+" - ___", caveatron.FONT_22, optVisible, 5);
+    ctGUI.addButton(170, 304, 135, 68, TAN_DRK, "___ - ___", caveatron.FONT_22, optVisible, 6);
+    ctGUI.addButton(15, 388, 290, 68, RED_DRK, "CANCEL", caveatron.FONT_28, optVisible, 7);
+  
+    myGLCD.setColor(GRAY_025);
+    myGLCD.drawLine(15,56,304,56);
+    myGLCD.drawLine(15,218,304,218);
+    myGLCD.drawLine(15,380,304,380);
+  
+    ctGUI.print("CHOOSE SHOT TYPE", 160, 25, caveatron.FONT_28, 3, CENTER_J, YELLOW_STD, BLACK_STD);
+    ctGUI.print("Front sight", 15, 64, caveatron.FONT_28, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+    ctGUI.print("Back sight", 15, 226, caveatron.FONT_28, 2, LEFT_J, YELLOW_STD, BLACK_STD);
+  
+    drawStatusBar("SHOT MODE");
+    drawInfoBar("Last Shot: " + stationFrom + " - " + stationTo);
+  }
+}
+
+//Increment previous station code for next potential station
+//If final character is A-Y, increase to next letter
+//If final characters are numbers, extract digits from any preceeding letters and increment by 1
+//If final character is something else return "0"
+String PredictNextStation(String s_prev) {
+  int first_dig, cascii, n;
+  int slen = s_prev.length();
+  cascii = int(s_prev.charAt(slen-1));
+  if (isdigit(s_prev.charAt(slen-1))) { //Final character is a number
+    int i = slen-1;
+    while ((isdigit(s_prev.charAt(i))) && (i>=0)) {
+      first_dig = i;
+      i--;
+    } 
+    n = (s_prev.substring(first_dig, slen)).toInt();
+    n++;
+    s_prev.remove(first_dig);
+    return s_prev+String(n);
+  } else if ((cascii>=65) && (cascii<90)) { //Final character is a letter A-Y
+    cascii++;
+    s_prev.setCharAt(slen-1, char(cascii));
+    return s_prev;
+  } else return "0"; //Final character is something else
+}
+
+//Handle button presses
+void ShotStationSelectHandler(int URN) {
+  switch (URN) {
+    case 1:
+      stationFromNew = stationTo;
+      stationToNew = stationNext;
+      backSight = false;
+      guiStep = 3;
+      CreateScreen(screenShotMode);
+      break;
+    case 2:
+      stationFromNew = stationTo;
+      backSight = false;
+      guiStep = 2;
+      CreateScreen(screenStationEntry);
+      break;
+    case 3:
+      backSight = false;
+      CreateScreen(screenStationEntry);
+      break;
+    case 4:
+      stationFromNew = stationTo;
+      stationToNew = stationFrom;
+      backSight = true;
+      guiStep = 3;
+      CreateScreen(screenShotMode);
+      break;
+    case 5:
+      stationFromNew = stationFrom;
+      backSight = true;
+      guiStep = 2;
+      CreateScreen(screenStationEntry);
+      break;
+    case 6:
+      backSight = true;
+      CreateScreen(screenStationEntry);
+      break;   
+    case 7:
+      CloseSurveyFiles();
+      currentMode = modeNull; 
+      CreateScreen(screenMainMenu);
+      break;           
   }
 }
 
@@ -218,7 +324,8 @@ void ShotModeSetup() {
     DrawRightArrow();
   } else DrawLeftArrow();
   ctGUI.print("Stations:", 15, 35, caveatron.FONT_28, 2, LEFT_J, YELLOW_STD, BLACK_STD);
-  ctGUI.print(stationFromNew + " - " + stationToNew, 304, 35, caveatron.FONT_22, 2, RIGHT_J, WHITE_STD, BLACK_STD);
+  if (backSight==true) ctGUI.print(stationFromNew + " - " + stationToNew + " (B)", 304, 41, caveatron.FONT_22, 2, RIGHT_J, TAN_STD, BLACK_STD);
+  else ctGUI.print(stationFromNew + " - " + stationToNew, 304, 41, caveatron.FONT_22, 2, RIGHT_J, WHITE_STD, BLACK_STD);
   delay(250);
   caveatron.LRF_LaserOn();
   laserFlag = true;
@@ -237,7 +344,7 @@ void ShotModeHandler(int URN) {
       ctGUI.GUIobject_visible[btn6] = optInvisible;
       IMUErrorCheck(1); //Get initial IMU reading for comparison in case of stuck values
       GetCurrentTime();
-      logFile.println("$$\t"+stationFromNew+'\t'+stationToNew+'\t'+String(rightFlag));  //Write stations to log file
+      logFile.println("$$\t"+stationFromNew+'\t'+stationToNew+'\t'+String(backSight)+'\t'+String(rightFlag));  //Write stations to log file
       logFile.println("$&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
       LRFFlag = true;
       shotFlag = true;
@@ -295,13 +402,17 @@ void ShotModeHandler(int URN) {
 
 //Save shot measurement to SD card
 uint8_t SaveShotData() {
-  char bufin[66];
+  char bufin[91];
   String outStr, chkStr;
   char sc1[8], sc2[8];
   float fval, fval1;
   uint8_t saveStatus;
 
-  outStr = stationFrom + "\t" + stationTo + "\t" + String(distance) + "\t" + String(azimuth) + "\t" + String(inclination) + "\t;Time: " + String(timeHour) + ":" + String(timeMinute) + ":" + String(timeSecond) + "\t;Roll: " + String(roll);
+  if (backSight==false) {
+    outStr = stationFrom + "\t" + stationTo + "\t" + String(distance) + "\t" + String(azimuth) + "\t" + String(inclination) + "\t;Time: " + String(timeHour) + ":" + String(timeMinute) + ":" + String(timeSecond) + "\t;Roll: " + String(roll);
+  } else {
+    outStr = stationFrom + "\t" + stationTo + "\t" + String(distance) + "\t" + String(azimuth) + "\t" + String(inclination) + "\t#S Back" + "\t;Time: " + String(timeHour) + ":" + String(timeMinute) + ":" + String(timeSecond) + "\t;Roll: " + String(roll);
+  }
   outStr.trim();
   theFile.println(outStr);
   theFile.truncate(theFile.curPosition());
@@ -309,16 +420,9 @@ uint8_t SaveShotData() {
   //Read in last line to validate data
   theFile.rewind();
   theFile.seekSet(filePosition);
-  theFile.fgets(bufin, 65);
-  //Serial.println(bufin);
-  //Serial.println();
+  theFile.fgets(bufin, 90);
   chkStr = String(bufin);  
   chkStr.trim();
-  //Serial.println(outStr.length());
-  //Serial.println(outStr);
-  //Serial.println(chkStr.length());
-  //Serial.println(chkStr);
-  //Serial.println();
   if (chkStr!=outStr) {
     saveStatus=6;     //Save was not successful
     theFile.seekEnd(0);
@@ -328,13 +432,15 @@ uint8_t SaveShotData() {
   }
   else {
     saveStatus=1;   //Save was successful
-    lengthTrav += distance;
-    lengthHoriz += fabs(distance * cos(inclination / 57.29578));
-    lengthVert += distance * sin(inclination / 57.29578);
-    numStations++;
-    sta.lastTraverseNum = 0; traverseNum = "0";
-    sta.lastSplayNum = 0; splayNum = "0";
-    UpdateSettingsFile();
+    if (backSight==false) {
+      lengthTrav += distance;
+      lengthHoriz += fabs(distance * cos(inclination / 57.29578));
+      lengthVert += distance * sin(inclination / 57.29578);
+      numStations++;
+      sta.lastTraverseNum = 0; traverseNum = "0";
+      sta.lastSplayNum = 0; splayNum = "0";
+      UpdateSettingsFile();
+    }
   }
   return saveStatus;
 }

@@ -7,7 +7,6 @@
 void ReadCompassData (int numPoints) { 
   int i;
   int p = 1;
-  boolean ni = true;
   if (numPoints > 0) {azimuth = 0; inclination = 0; roll = 0; ztilt = 0; p = numPoints;}
   for (int j=0;j<6;j++) rawIMU[j]=0;
   float singleInclin, singleRoll, singleAzimuth;
@@ -16,13 +15,11 @@ void ReadCompassData (int numPoints) {
     singleRoll = measureRoll(singleInclin);
     singleInclin = measureTilt(singleRoll);
     singleAzimuth = measureHeading(singleInclin, singleRoll);
-    if (i==0) if ((singleAzimuth<4.71239)&&(singleAzimuth>1.5708)) ni = false; //Sets initial north or south orientation for averaging compass readings
     roll = SumRoll(roll, singleRoll);
     inclination += -singleInclin; 
-    azimuth = SumAzimuth(azimuth, singleAzimuth, ni);
+    azimuth = SumAzimuth(azimuth, singleAzimuth);
     rawIMU[0] += caveatron.IMU_a_x; rawIMU[1] += caveatron.IMU_a_y; rawIMU[2] += caveatron.IMU_a_z;
     rawIMU[3] += caveatron.IMU_m_x; rawIMU[4] += caveatron.IMU_m_y; rawIMU[5] += caveatron.IMU_m_z;
-    //if (currentMode==modeShot) ztilt = ztilt + atan2(-ax/rtilt,(ay* sin(singleRoll) + az*cos(singleRoll))/rtilt);
   }
   if (numPoints > 0) AverageCompassData(numPoints);
 }
@@ -33,7 +30,6 @@ void AverageCompassData (int numPoints) {
   roll = (roll/numPoints) * 57.29578;
   azimuth = AverageAzimuth(azimuth, numPoints);
   for (int j=0;j<6;j++) rawIMU[j] /= numPoints;
-  //if (currentMode==modeShot) ztilt = (ztilt/numPoints) * 57.29578;
 }
   
 // Obtain a single reading from the compass and compute the calibrated accelerometer values for each axis
@@ -60,7 +56,6 @@ void GetCompassReading() {
   ay = acc21*caveatron.IMU_a_x + acc22*caveatron.IMU_a_y + acc23*caveatron.IMU_a_z + acc20;
   az = acc31*caveatron.IMU_a_x + acc32*caveatron.IMU_a_y + acc33*caveatron.IMU_a_z + acc30;
   rtilt = sqrt(pow(ax,2) + pow(ay,2) + pow(az,2));
-  
 }
 
 // Compute the inclination angle value
@@ -116,17 +111,20 @@ float measureHeading(float mpitch, float mroll) {
 }   
 
 //Function for summing multiple azimuth readings (for averaging) to maintain result within 0-360 deg
-float SumAzimuth(float sumHeading, float newHeading, boolean no) {
-  float orientedHeading;
-  if ((3.14159-newHeading)<0) orientedHeading = newHeading - 6.28319;
-  else orientedHeading = newHeading;
-  if (no==false) sumHeading += newHeading;
-  else sumHeading += orientedHeading;
-  /*if ((fabs(newHeading) > 1.570796) && ((sumHeading/newHeading) < 0)) {
-    if (sumHeading<0) sumHeading = sumHeading + (-6.283185+newHeading);
-    else sumHeading = sumHeading + (6.283185+newHeading);
+float SumAzimuth(float sumHeading, float newHeading) {
+  if ((newHeading > 1.570796) || (newHeading < -1.570796)) {
+    if ((sumHeading*newHeading)<0) {
+      if (sumHeading<0) {
+        sumHeading += (newHeading - 6.283185);
+      } else {
+        sumHeading += (newHeading + 6.283185);
+      }
+    } else {
+      sumHeading += newHeading;
+    }
+  } else {
+    sumHeading += newHeading;
   }
-  else sumHeading += newHeading;*/
   return sumHeading;
 }
   

@@ -680,7 +680,6 @@ boolean waiting=true;
       case 3:               //Take Shot
         float singleInclin, singleRoll, singleAzimuth;
         int axSum, aySum, azSum, mxSum, mySum, mzSum, axAvg, ayAvg, azAvg, mxAvg, myAvg, mzAvg;
-        boolean ni;
         axSum=0; aySum=0; azSum=0; mxSum=0; mySum=0; mzSum=0;
         azimuth=0; inclination=0; roll=0; ztilt = 0;
         BuzzerBEEP(800, 200);
@@ -690,12 +689,10 @@ boolean waiting=true;
           singleRoll = measureRoll(singleInclin);
           singleInclin = measureTilt(singleRoll);
           singleAzimuth = measureHeading(singleInclin, singleRoll);
-          if (i==0) if ((singleAzimuth<4.71239)&&(singleAzimuth>1.5708)) ni = false;
-          else ni = true;
           axSum += caveatron.IMU_a_x; aySum += caveatron.IMU_a_y; azSum += caveatron.IMU_a_z; mxSum += caveatron.IMU_m_x; mySum += caveatron.IMU_m_y; mzSum += caveatron.IMU_m_z;
           roll += singleRoll;
           inclination += -singleInclin; 
-          azimuth = SumAzimuth(azimuth, singleAzimuth, ni);
+          azimuth = SumAzimuth(azimuth, singleAzimuth);
         }
         AverageCompassData(300);
         datetimeStr = "20"+dateYear+"-"+dateMonth+"-"+dateDay+"_"+timeHour+":"+timeMinute+":"+timeSecond;

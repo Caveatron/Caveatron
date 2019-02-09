@@ -297,7 +297,7 @@ void LIDARViewDisplay_RP() {
         }
   
         // Get sample
-        lidarAngle = int(rplidar.getCurrentPoint().angle+0.5);
+        lidarAngle = 360 - (int(rplidar.getCurrentPoint().angle + 0.5 + LIDAROrientCal) % 360);
         lidarDistance = rplidar.getCurrentPoint().distance;
   
         // Plot LIDAR Data      
@@ -404,8 +404,8 @@ void InitializeTraverse() {
     IMUErrorCheck(1);
     lastLIDARdistance = distance;
     initLIDARdistance = distance + caveatron.LIDARFrontDist + caveatron.boxRearDist;
-    lastLIDARazi = azimuth;
-    lastLIDARinc = inclination;
+    lastLIDARinc = inclination; lastLIDARazi = azimuth;
+    incShiftFlag = false; aziShiftFlag = false;
     caveatron.LRF_SetMode(1);
     delay(2500);
     BuzzerBEEP(800, 500);
@@ -598,7 +598,6 @@ void RecordLIDAR_XV11() {
   int compass_count = 0;
   int lidarData[360][2];
   int deltaTime=0;
-  float deltaAzi;
   LIDAR_LRF_Freq = (caveatron.LRFperiod/210)+1; //The max freq of LIDAR rotation that the LRF can be checked. 210 is msec per rotation.
 
   distance=0; azimuth = 0; inclination = 0; roll = 0;
@@ -670,23 +669,12 @@ void RecordLIDAR_XV11() {
     }
 
     if ((angle-lastangle)<-270) {   //New rotation
- 
-      AverageCompassData(compass_count);
 
-      //Check if enclosure pointing direction suddenly changes too much
-      if (currentMode==modePassage)  {
-        if (fabs(lastLIDARinc-inclination) > 20) { //Check for excessive acceleration or tilt
-          FailedLIDAR(9);
-          return;
-        }
-        deltaAzi = fabs(lastLIDARazi-azimuth);
-        if (deltaAzi > 300) deltaAzi = 360-deltaAzi;
-        if (deltaAzi > 20) {                      //Check for excessive azimuth
-          FailedLIDAR(10);
-          return;
-        }
-        lastLIDARazi = azimuth; lastLIDARinc = inclination;
+      AverageCompassData(compass_count);  //Get new compass reading
+      if (currentMode==modePassage) {
+        if (!CheckForExcessAngleShift()) return;  //Check if enclosure pointing direction suddenly changes too much in Passage Mode
       }
+      
       if ((currentMode==modePassage) && ((millis()-lastLRFTime) > caveatron.LRFperiod)) {
         
         if(GetLIDARDistance()==false) return;
@@ -736,7 +724,6 @@ void RecordLIDAR_SWEEP() {
   int compass_count = 0;
   int lidarErrorCount = 0;
   int deltaTime=0;
-  float deltaAzi;
   int lastCompassTime, numSerialBytes;
   int compassRate = 20; // in msec
   LIDAR_LRF_Freq = (caveatron.LRFperiod/250)+1; //The max freq of LIDAR rotation that the LRF can be checked. 250 is msec per rotation.
@@ -752,20 +739,9 @@ void RecordLIDAR_SWEEP() {
     {
       // check if this reading was the very first reading of a new 360 degree scan
       if (reading.isSync()) {
-        AverageCompassData(compass_count);
-        //Check if enclosure pointing direction suddenly changes too much
-        if (currentMode==modePassage)  {
-          if (fabs(lastLIDARinc-inclination) > 20) { //Check for excessive acceleration or tilt
-            FailedLIDAR(9);
-            return;
-          }
-          deltaAzi = fabs(lastLIDARazi-azimuth);
-          if (deltaAzi > 300) deltaAzi = 360-deltaAzi;
-          if (deltaAzi > 20) {                      //Check for excessive azimuth
-            FailedLIDAR(10);
-            return;
-          }
-          lastLIDARazi = azimuth; lastLIDARinc = inclination;
+        AverageCompassData(compass_count);  //Get new compass reading
+        if (currentMode==modePassage) {
+          if (!CheckForExcessAngleShift()) return;  //Check if enclosure pointing direction suddenly changes too much in Passage Mode
         }
         
         if ((currentMode==modePassage) && ((millis()-lastLRFTime) > caveatron.LRFperiod)) {  
@@ -854,7 +830,6 @@ void RecordLIDAR_RP() {
   int compass_count = 0;
   int lidarErrorCount = 0;
   int deltaTime=0;
-  float deltaAzi;
   int lastCompassTime, numSerialBytes;
   int compassRate = 20; // in msec
   LIDAR_LRF_Freq = (caveatron.LRFperiod/250)+1; //The max freq of LIDAR rotation that the LRF can be checked. 250 is msec per rotation.
@@ -863,26 +838,15 @@ void RecordLIDAR_RP() {
   LIDARstartTime = millis();
   while (done==false) {
 
-
     // Read LIDAR Data
     if (IS_OK(rplidar.waitPoint())) {
       // check if this reading was the very first reading of a new 360 degree scan
       if (rplidar.getCurrentPoint().startBit) {
-        AverageCompassData(compass_count);
-        //Check if enclosure pointing direction suddenly changes too much
-        if (currentMode==modePassage)  {
-          if (fabs(lastLIDARinc-inclination) > 20) { //Check for excessive acceleration or tilt
-            FailedLIDAR(9);
-            return;
-          }
-          deltaAzi = fabs(lastLIDARazi-azimuth);
-          if (deltaAzi > 300) deltaAzi = 360-deltaAzi;
-          if (deltaAzi > 20) {                      //Check for excessive azimuth
-            FailedLIDAR(10);
-            return;
-          }
-          lastLIDARazi = azimuth; lastLIDARinc = inclination;
+        AverageCompassData(compass_count);  //Get new compass reading
+        if (currentMode==modePassage) {
+          if (!CheckForExcessAngleShift()) return;  //Check if enclosure pointing direction suddenly changes too much in Passage Mode
         }
+
         //If sufficient time has elapsed since last LRF reading, get LRF and write this rotation position data to file
         if ((currentMode==modePassage) && ((millis()-lastLRFTime) > caveatron.LRFperiod)) {  
           if(GetLIDARDistance()==false) return;
@@ -899,7 +863,9 @@ void RecordLIDAR_RP() {
       }
 
       // store the info for this sample
-      lidarAngle = rplidar.getCurrentPoint().angle;
+      lidarAngle = rplidar.getCurrentPoint().angle + LIDAROrientCal;
+      if (lidarAngle > 360) lidarAngle = 360 - (lidarAngle - 360);
+      else lidarAngle = 360 - lidarAngle;
       lidarDistance = rplidar.getCurrentPoint().distance;
       lidarSignal = rplidar.getCurrentPoint().quality;
 
@@ -991,6 +957,40 @@ boolean GetLIDARDistance() {
       FailedLIDAR(11);
       return false;
     }
+  }
+  return true;
+}
+
+//Checks for sudden angle shift in azimuth or inclination that exceeds 20 deg.
+//Allows for one bad reading before failing scan. Bad readings are set to a value of 999.
+boolean CheckForExcessAngleShift() {
+  //Check for excessive acceleration or tilt shift
+  if (fabs(lastLIDARinc-inclination) > 20) { 
+    if (incShiftFlag==true) { //Allow one bad reading, after that, fail the scan
+      FailedLIDAR(9);
+      return false;
+    } else {
+      incShiftFlag = true; //Set flag true on first bad reading
+      inclination = 999;
+    }
+  } else {                      //If reading is within tolerance, reset flag and save reading for next round
+    incShiftFlag = false;
+    lastLIDARinc = inclination;
+  }
+  //Check for excessive azimuth shift
+  float deltaAzi = fabs(lastLIDARazi-azimuth);
+  if (deltaAzi > 300) deltaAzi = 360-deltaAzi;
+  if (deltaAzi > 20) {                      
+    if (aziShiftFlag==true) { //Allow one bad reading, after that, fail the scan
+      FailedLIDAR(10);
+      return false;
+    } else {
+      aziShiftFlag = true; //Set flag true on first bad reading
+      azimuth = 999;
+    }
+  } else {                      //If reading is within tolerance, reset flag and save reading for next round
+    aziShiftFlag = false;
+    lastLIDARazi = azimuth;           
   }
   return true;
 }

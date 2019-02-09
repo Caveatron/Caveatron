@@ -8,7 +8,7 @@ void USBConnectMode() {
   char inChar;
   byte checksum;
   int i,j,k,numbytes,numpackets,lastnumbytes,packetcount,packetsize;
-  char data[4097];
+  char data[3610];
     
   InitSD_USBConnectMode();
 

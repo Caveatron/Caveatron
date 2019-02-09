@@ -1,26 +1,25 @@
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 1.20                             //
+//                       Version 1.30                             //
 /******************************************************************/
-// Joe Mitchell, 2018-11-30
+// Joe Mitchell, 2019-02-08
 
-// Change Notes(1.15) - not publically released but included in 1.20:
-// Changed method for averaging azimuth readings as previous method produced incorrect value when pointed due north
-// Redo of a shot now starts with the same box corner selected as the previous shot attempt
-// Added function to Calibration menu to check the quality of the azimuth calibration.
-// Added support for LIDAR subtypes and settings to .cvl file.
-// Includes update of LSM303 library to increase magnetometer data rate to 12.5 Hz
-// Misc small fixes
+// Change Notes(1.21) - not publically released but included in 1.30:
+// Fixed bug with RPLIDAR viewing and recording that produced incorrect scan orientation.
+// Fixed bug that prevented RPLIDAR scan data from being viewed with the Scan Review function.
+// Fixed bug that resulted in some Room Scan data being incorrectly displayed in the Scan Review function.
 
-// Change Notes(1.20):
-// CRITICAL: This version requires updating the following libraries: Caveatron_Hardware, LSM303
-// CRITICAL: This version requires the following new library: RPLIDAR
-// Added RP LIDAR integration for A1M8, A2M8, A2M6, and A3M1 (only functions at 2 kHz sampling rate, only tested on A1M8)
-//    RP LIDAR is auto detected with both SENSE1 and SENSE2 pins tied to ground.
-//    Requires additional voltage regulator in LIDAR module to power LIDAR motor at 3.65V for 5 Hz rotation rate.
-// Added new calibration parameter locations on EEPROM for RP LIDAR
-//    Use the new 1.7 versions of the Caveatron_Parameter_Uploader and Downloader to update EEPROM before using an RPLIDAR
-// Fixed bug that would choose the wrong shot when deleting a shot
+// Change Notes(1.30):
+// CRITICAL: This version requires updating to the following library: Caveatron_GUI 1.3.
+// NOTE: It is highly recommended that you also upgrade to the following libraries: Caveatron_Hardware 1.3; URTouch, UTFT, and UTFT_CTE (2019-02-07 versions).
+//       These new versions add future support for the Teensy 3.5 and 3.6 processors.
+// Added support for dedicated back-sight shots.
+// Added screen when entering shot mode to select front/back shot type and preselect recent station codes.
+// Added next station code prediction.
+// Added tolerance to ignore a single superious magnetometer or accelerometer reading and continue scan
+// Fixed bug that would result in erroneous azimuth readings when pointed due south and Passage Mode scan failure.
+// Fixed bug that prevented display of the last shot list screen under certain conditions.
+
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
 #define AUTO_CONFIG 1
@@ -32,7 +31,7 @@ uint8_t lidarModuleType;
 uint8_t lidarModuleSubType=0;
 uint8_t lidarModuleConfig=0;
 
-String softwareVersion = "1.20";
+String softwareVersion = "1.30";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.
@@ -88,6 +87,7 @@ int updateStatusBarCount = 1;
 #define screenCalibrate 13
 #define screenLIDARView 14
 #define screenAbout 15
+#define screenShotStationSelect 16
 #define screenSetTimeDate 21
 #define screenTimeDateEntry 22
 #define screenSDCardInfo 23
@@ -162,7 +162,7 @@ int LIDARPowerPin, LIDARSensePin1, LIDARSensePin2;
 int lidarPacket[4][3];
 int angle, lastangle, rot_count, pos_count, data_count, save_count, LIDARstartTime, LIDAR_LRF_Freq;
 float lastLIDARdistance, lastLIDARazi, lastLIDARinc, initLIDARdistance;
-boolean lidarErrorFlag = false;
+boolean incShiftFlag, aziShiftFlag, lidarErrorFlag = false;
 int idx, LIDAROrientCal;
 
 //Variables for Measurement
@@ -174,10 +174,11 @@ int rawIMU[6], ztilt;
 boolean rightFlag = false;
 
 //Variables for Station Codes
-String stationFrom, stationTo, stationFromNew, stationToNew;
+String stationFrom, stationTo, stationFromNew, stationToNew, stationNext;
 String traverseNum, traverseTo, splayNum, splayStation;
 float lengthTrav, lengthHoriz, lengthVert;
 int numStations, numTraverses, numSplays;
+boolean backSight;
 typedef struct
   {
     String code;
@@ -203,6 +204,7 @@ typedef struct
       String di_e;
       String az_e;
       String in_e;
+      boolean bk_e;
   }  editvector_type;
   editvector_type editVector;
 
@@ -394,10 +396,17 @@ void CreateScreen(int screen) {
     case screenSettingsMenu: 
       SettingsMenuSetup();
       break;
-    case screenStationEntry:
+    case screenShotStationSelect:
       if (SDFlag==false) ErrorBox("SD Card", "Not Found", "", 99);
       else fileFlag = OpenSurveyFiles();
-      if ((SDFlag==true) && (fileFlag==true)) StationEntrySetup();
+      if ((SDFlag==true) && (fileFlag==true)) ShotStationSetup();
+      break;
+    case screenStationEntry:   
+      if (currentMode!=modeShot) {
+        if (SDFlag==false) ErrorBox("SD Card", "Not Found", "", 99);
+        else fileFlag = OpenSurveyFiles();
+        if ((SDFlag==true) && (fileFlag==true)) StationEntrySetup();
+      } else StationEntrySetup();
       break;
     case screenTraverseEntry:
       TraverseEntrySetup();
@@ -585,6 +594,9 @@ void OnButtonPress(int btnFound){
     case screenTimeDateEntry:
       KeyPadHandler(URN);
       break;
+    case screenShotStationSelect:
+      ShotStationSelectHandler(URN);
+      break;
     case screenShotMode: 
       ShotModeHandler(URN);
       break;
@@ -660,7 +672,7 @@ void MainMenuHandler(int URN) {
     case 1:
       currentMode = modeShot; 
       guiStep++;
-      CreateScreen(screenStationEntry);
+      CreateScreen(screenShotStationSelect);
       break;
     case 2:
       currentMode = modePassage; 

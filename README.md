@@ -3,6 +3,22 @@
 The Caveatron is a unique compact, handheld, electronic device for mapping caves or other underground environments. It functions as a cave survey tool, recording conventional distance, azimuth and inclination measurements and can also go far beyond that with its integrated LIDAR to capture a full 3D scan of the cave interior. It greatly speeds up the cave survey process by recording station-to-station shots in just a few seconds and performs a station-to-station 3D scan traverse in less than a minute. The user can fully interact with the device and review data with the built-in touchscreen. A USB port provides access to the stored data from a PC or Mac and is also used to charge the integrated long-life battery pack. The station measurement file is compatible with Walls Cave Mapping Software and the LIDAR scan file can be quickly processed into a standard point cloud with custom-written software. The Caveatron is designed to be easily portable, lightweight, and low cost as well as water and dirt resistant and durable enough to survive regular use in a cave.
 
 ## Release Notes
+Version: 1.30
+
+CRITICAL NOTES!
+This version requires updating the following libraries: Caveatron_GUI
+It is highly recommended that you also upgrade the following libraries: Caveatron_Hardware, URTouch, UTUF, and UTFT_CTE. The new versions add future support for the Teensy 3.5/3.6.
+
+Changes since version 1.20:
+- Added support for dedicated back-sight shots.
+- Added screen when entering shot mode to select front/back shot type and preselect recent station codes.
+- Added next station code prediction.
+- Added tolerance to ignore a single superious magnetometer or accelerometer reading and continue scan.
+- Fixed bug that would result in erroneous azimuth readings when pointed due south and Passage Mode scan failure.
+- Fixed bug that prevented display of the last shot list screen under certain conditions.
+- Fixed bug with RPLIDAR viewing and recording that produced incorrect scan orientation.
+- Fixed bug that prevented RPLIDAR scan data from being viewed with the Scan Review function.
+- Fixed bug that resulted in some Room Scan data being incorrectly displayed in the Scan Review function.
 
 Version: 1.20
 
@@ -22,7 +38,6 @@ Changes since version 1.10:
 - Added support for LIDAR subtypes and settings to .cvl file.
 - Includes update of LSM303 library to increase magnetometer data rate to 12.5 Hz
 - Misc small bug fixes.
-
 
 Version: 1.10
 

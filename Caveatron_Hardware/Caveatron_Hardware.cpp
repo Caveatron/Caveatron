@@ -1,8 +1,8 @@
 /*
   Caveatron_Hardware.cpp 
-  Version 1.3
+  Version 1.31
   Joe Mitchell
-  2019-01-24
+  2019-02-25
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -708,7 +708,7 @@ void Caveatron_Hardware::RTC_GetDateTime()
 			weekDay = bcdToDec(Wire1.read()); //0-6 -> sunday - Saturday
 			RTCday = bcdToDec(Wire1.read());
 			RTCmonth = bcdToDec(Wire1.read());
-			RTCyear = 2000+bcdToDec(Wire1.read());
+			RTCyear = bcdToDec(Wire1.read());
 			
 			break;
 		#if defined (__MK64FX512__) || defined(__MK66FX1M0__)

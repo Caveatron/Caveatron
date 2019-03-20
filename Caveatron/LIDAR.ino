@@ -160,7 +160,7 @@ void LIDARViewDisplay_SWEEP() {
   ctGUI.print(pscale, 130, 360, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
   ctGUI.print("25m SWEEP LIDAR Connected",10, 390, caveatron.FONT_22, 2, LEFT_J, YELLOW_STD, BLACK_STD);
   if (InitializeLIDAR()) {
-    delay(500);
+    delay(1000);
     if (!device.startScanning()) {
       FailedLIDAR(8);
       fail = true;
@@ -401,6 +401,7 @@ void InitializeTraverse() {
     logFile.println("##\t"+String(traverseTo)+"\tT\t"+String(traverseNum)+'\t'+String(lidarModuleType)+"."+String(lidarModuleSubType)+"."+String(lidarModuleConfig)+'\t'+String(filepos));  //Write traverse info to log file
     logFile.println("#&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
     logFile.println("#@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
+    logFile.flush();
     IMUErrorCheck(1);
     lastLIDARdistance = distance;
     initLIDARdistance = distance + caveatron.LIDARFrontDist + caveatron.boxRearDist;
@@ -499,6 +500,7 @@ void InitializeSplay() {
   logFile.println("##\t"+String(splayStation)+"\tS\t"+String(splayNum)+'\t'+String(lidarModuleType)+"."+String(lidarModuleSubType)+"."+String(lidarModuleConfig)+'\t'+String(filepos));  //Write splay info to log file
   logFile.println("#&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
   logFile.println("#@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
+  logFile.flush();
   IMUErrorCheck(1);
   delay(1000);
   BuzzerBEEP(800, 500);
@@ -1000,6 +1002,10 @@ boolean CheckForExcessAngleShift() {
 void EndLIDARScan() {
   uint8_t IMUstatus;
   lidarFile << flush;
+  UpdateSettingsFile();
+  IMUstatus = IMUErrorCheck(0);
+  logFile.println("#!\t"+String(0-IMUstatus)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write LRF status code to log file   
+  logFile.flush();   
   if (lidarModuleType==2) device.stopScanning();
   delay(250);
   CloseLIDAR();
@@ -1008,9 +1014,6 @@ void EndLIDARScan() {
   laserFlag = false;
   LRFFlag = false;
   caveatron.LRF_SetMode(0);
-  UpdateSettingsFile();
-  IMUstatus = IMUErrorCheck(0);
-  logFile.println("#!\t"+String(0-IMUstatus)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write LRF status code to log file      
   ctGUI.makeObjectInvisible(btn3);
   myGLCD.setColor(BLACK_STD);
   myGLCD.fillRect(14,72,306,93);
@@ -1059,8 +1062,9 @@ void FailedLIDAR(int errorCode) {
     if (errorCode > 5) {
       lidarFile << "#FAILED" << endl;
     }
-    logFile.println("#!\t"+String(errorCode)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write error code to log file      
     lidarFile << flush;
+    logFile.println("#!\t"+String(errorCode)+'\t'+String(save_count)+'\t'+String(rot_count)+'\t'+String(millis()-LIDARstartTime)+"\tC"); //Write error code to log file      
+    logFile.flush();
   }
   //Shutdown LIDAR and LRF
   switch (lidarModuleType) {

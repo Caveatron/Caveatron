@@ -56,7 +56,8 @@ void TakeShot() {
       ComputeBoxCorrection();
       if (LRFstatus == 1) LRFstatus = SaveShotData();  //Save shot data to survey file if shot succeeded     
       logFile.println("$@\t"+String(caveatron.LRFdistance)+'\t'+String(rawIMU[0])+'\t'+String(rawIMU[1])+'\t'+String(rawIMU[2])+'\t'+String(rawIMU[3])+'\t'+String(rawIMU[4])+'\t'+String(rawIMU[5]));  //Write averaged raw accel and mag values to log file
-      logFile.println("$!\t"+String(LRFstatus)+'\t'+String(IMUstatus)+'\t'+String(numGoodShots)+"\tC"); //Write LRF status code to log file      
+      logFile.println("$!\t"+String(LRFstatus)+'\t'+String(IMUstatus)+'\t'+String(numGoodShots)+"\tC"); //Write LRF status code to log file   
+      logFile.flush();   
       drawStatusBar("SHOT MODE");
       ctGUI.print("STATIONS", 15, 26, caveatron.FONT_28, 3, LEFT_J, YELLOW_STD, BLACK_STD);
       if (backSight==true) {
@@ -346,6 +347,7 @@ void ShotModeHandler(int URN) {
       GetCurrentTime();
       logFile.println("$$\t"+stationFromNew+'\t'+stationToNew+'\t'+String(backSight)+'\t'+String(rightFlag));  //Write stations to log file
       logFile.println("$&\t" + String(caveatron.BATT_GetLevel()) + '\t' + timeHour + ":" + timeMinute + ":" + timeSecond);  //Write battery level and time stamp to log file
+      logFile.flush();
       LRFFlag = true;
       shotFlag = true;
       break;
@@ -415,6 +417,7 @@ uint8_t SaveShotData() {
   }
   outStr.trim();
   theFile.println(outStr);
+  theFile.flush();
   theFile.truncate(theFile.curPosition());
 
   //Read in last line to validate data

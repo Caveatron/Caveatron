@@ -40,13 +40,6 @@ void InitSD() {
       streamPositionScans = inFile.tellg();
       inFile.close();
       infoBarMsg = "Survey: "+caveName;
-      //Log startup event
-      //if (OpenLogFileWrite()) {
-          //GetCurrentTime();
-          //logFile << endl;
-          //logFile << "^^" << '\t' << caveatron.BATT_GetLevel() << '\t' << String(timeHour) << String(timeMinute) << String(timeSecond) << endl; //Write battery level and time stamp to log file
-      //}
-      //logFile.close();
     }
   }
 }

@@ -1,24 +1,14 @@
 /******************************************************************/
 //                        CAVEATRON                               //
-//                       Version 1.30                             //
+//                       Version 1.31                             //
 /******************************************************************/
-// Joe Mitchell, 2019-02-08
+// Joe Mitchell, 2019-02-25
 
-// Change Notes(1.21) - not publically released but included in 1.30:
-// Fixed bug with RPLIDAR viewing and recording that produced incorrect scan orientation.
-// Fixed bug that prevented RPLIDAR scan data from being viewed with the Scan Review function.
-// Fixed bug that resulted in some Room Scan data being incorrectly displayed in the Scan Review function.
-
-// Change Notes(1.30):
-// CRITICAL: This version requires updating to the following library: Caveatron_GUI 1.3.
-// NOTE: It is highly recommended that you also upgrade to the following libraries: Caveatron_Hardware 1.3; URTouch, UTFT, and UTFT_CTE (2019-02-07 versions).
-//       These new versions add future support for the Teensy 3.5 and 3.6 processors.
-// Added support for dedicated back-sight shots.
-// Added screen when entering shot mode to select front/back shot type and preselect recent station codes.
-// Added next station code prediction.
-// Added tolerance to ignore a single superious magnetometer or accelerometer reading and continue scan
-// Fixed bug that would result in erroneous azimuth readings when pointed due south and Passage Mode scan failure.
-// Fixed bug that prevented display of the last shot list screen under certain conditions.
+// Change Notes(1.31):
+// CRITICAL: If you updated the Caveatron_Hardware library to v1.3, replace it with v1.31. If not, no change is required.
+// Improvements to ensure data is written to SD card in the event of a system freeze.
+// Fixed bug that can potentially cause a system freeze when ending a scan with the SWEEP LIDAR (requires updating SWEEP library to 2019-03-02 version).
+// Changes to sequence of events when LIDAR scan ended to ensure log file is properly updated in the event of a system freeze.
 
 
 // Hardware configuration option - set to 0 for manual, 1 to load from EEPROM
@@ -31,7 +21,7 @@ uint8_t lidarModuleType;
 uint8_t lidarModuleSubType=0;
 uint8_t lidarModuleConfig=0;
 
-String softwareVersion = "1.30";
+String softwareVersion = "1.31";
 
 #include <Eigen3210.h>     // Calls main Eigen matrix class library
 #include <Eigenvalues>             // Calls inverse, determinant, LU decomp., etc.

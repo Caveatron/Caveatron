@@ -2,7 +2,7 @@
   Caveatron_Hardware.h 
   Version 1.31
   Joe Mitchell
-  2019-02-25
+  2019-11-04
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -102,7 +102,7 @@ class Caveatron_Hardware
 		void SD_Init();
 		
 		// 	EEPROM Functions
-		void EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues);
+		boolean EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues);
 		float EEPROM_readFloat(uint16_t address);
 		String EEPROM_readCharArray(uint16_t address, int numvalues);
 		

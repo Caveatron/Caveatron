@@ -1,8 +1,8 @@
 /*
   Caveatron_Hardware.cpp 
-  Version 1.31
+  Version 1.4
   Joe Mitchell
-  2019-02-25
+  2019-11-04
   
   This library contains all functions to interface between the main code and the hardware used for the Caveatron. 
   The library is setup to allow for the use of different hardware which is set by a hardware code stored on the EEPROM with the calibration parameters.
@@ -17,9 +17,7 @@ Caveatron_Hardware::Caveatron_Hardware(UTFT * lcd, URTouch * touch)
   	mylcd = (UTFT *) lcd;
   	mytouch = (URTouch *) touch;
 	myFont_CTE = new UTFT_CTE(mylcd);
-	#if defined(_SAM3XA_)	//for Arduino Due
-		myFont_GHL = new UTFT_GHL(mylcd);
-	#endif
+	myFont_GHL = new UTFT_GHL(mylcd);
 }
 
 // Initialize library from serial number and hardware code
@@ -124,7 +122,6 @@ void Caveatron_Hardware::LCD_Init()
 			iRETURN = 522;
 			gLOGO = 550;
 			break;
-		#if defined(_SAM3XA_)	//for Arduino Due
 		case '2':
 			myFont_GHL->SPI_Flash_init(52);
 			//BVS= Bitstream vera sans, suffix = font size in pixel (height)
@@ -153,7 +150,6 @@ void Caveatron_Hardware::LCD_Init()
 			iRETURN = 266;
 			gLOGO = 254;
 			break;
-		#endif
 	}
 }
 
@@ -165,11 +161,9 @@ void Caveatron_Hardware::LCD_PrintText(String st, int x, int y, int font_number)
 		case '1':
 			myFont_CTE->Put_Text(st, x, y, font_number);
 			break;
-		#if defined(_SAM3XA_)	//for Arduino Due
 		case '2':
 			myFont_GHL->Put_Text(st, x, y, font_number);
 			break;
-		#endif
 	}
 }
 
@@ -180,11 +174,9 @@ void Caveatron_Hardware::LCD_SetTextSpacing(int font_spacing)
 		case '1':
 			myFont_CTE->Set_character_spacing(font_spacing);
 			break;
-		#if defined(_SAM3XA_)	//for Arduino Due
 		case '2':
 			myFont_GHL->Set_character_spacing(font_spacing);
 			break;
-		#endif
 	}
 }
 
@@ -196,13 +188,11 @@ int Caveatron_Hardware::LCD_GetTextLength(String st, int font_number)
 		case '1':
 			tlength = myFont_CTE->Get_Text_size_x(st, font_number);
 			break;
-		#if defined(_SAM3XA_)	//for Arduino Due
 		case '2':
 			char buf[st.length()+1];
 			st.toCharArray(buf, st.length()+1);
 			tlength = myFont_GHL->GetTextWidth(buf, font_number);
 			break;
-		#endif
 	}
 	return tlength;
 }
@@ -214,11 +204,9 @@ void Caveatron_Hardware::LCD_ShowImage(int x, int y, int addr)
 		case '1':
 			myFont_CTE->Load_image(x, y, addr);
 			break;
-		#if defined(_SAM3XA_)	//for Arduino Due
 		case '2':
 			myFont_GHL->Load_image(x, y, addr);
 			break;
-		#endif
 	}
 }
 
@@ -283,7 +271,7 @@ void Caveatron_Hardware::LRF_PowerOn()
 		case '1':
 		case '2':
 			digitalWrite(LRFOnPin, HIGH);
-			delay(400);
+			delay(600);
 			digitalWrite(LRFOnPin, LOW);
 			break;
 	}
@@ -301,6 +289,8 @@ void Caveatron_Hardware::LRF_LaserOn()
 	switch(lrfType) {
 		case '1':
 		case '2':
+			Serial1.print("*100515#");
+			delay(100);
 			Serial1.print("*100515#");
 			break;
 		case '3':
@@ -387,8 +377,6 @@ uint8_t Caveatron_Hardware::LRF_Read()
 				while ((millis() - LRFstartTime) < LRFtimeout) {
 							
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
-					//if ((LRFmode==1) && (rc == 0))
-						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
 					buf[rc] = '\0';
 
 					if (LRFmode==0) {
@@ -420,8 +408,6 @@ uint8_t Caveatron_Hardware::LRF_Read()
 				while ((millis() - LRFstartTime) < LRFtimeout) {
 							
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
-					//if ((LRFmode==1) && (rc == 0))
-						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
 					buf[rc] = '\0';
 
 					if (LRFmode==0) {
@@ -453,8 +439,6 @@ uint8_t Caveatron_Hardware::LRF_Read()
 				while ((millis() - LRFstartTime) < LRFtimeout) {
 							
 					rc = Serial1.readBytesUntil('\n', buf, sizeof(buf));
-					//if ((LRFmode==1) && (rc == 0))
-						//return 0; //No LRF data found - Return 0 (only during LIDAR scan)
 					buf[rc] = '\0';
 
 					pchs = strchr(buf, ':');
@@ -614,6 +598,10 @@ void Caveatron_Hardware::BATT_Init()
 			BATTERY_CAPACITY = 4400;
 			CUTOFF_VOLTAGE = 2900;
 			break;
+		case '2':
+			BATTERY_CAPACITY = 5200;
+			CUTOFF_VOLTAGE = 2900;
+			break;
 	}
 	
 	// Load libraries and initialize battery gauge hardware 
@@ -711,17 +699,6 @@ void Caveatron_Hardware::RTC_GetDateTime()
 			RTCyear = bcdToDec(Wire1.read());
 			
 			break;
-		#if defined (__MK64FX512__) || defined(__MK66FX1M0__)
-		case '2':
-			// Read values
-			RTCsecond = second();
-			RTCminute = minute();
-			RTChour = hour(); //24 hour time
-			RTCday = day();
-			RTCmonth = month();
-			RTCyear = year();
-			break;
-		#endif
 	}
 }
 
@@ -754,11 +731,6 @@ void Caveatron_Hardware::RTC_SetDateTime(int nYear, int nMonth, int nDay, int nH
 			Wire1.write(zero); //start 
 			Wire1.endTransmission();
 			break;
-		#if defined (__MK64FX512__) || defined(__MK66FX1M0__)  //for Teensy 3.5/3.6
-		case '2':
-			setTime(nHour, nMinute, 0, nDay, nMonth, nYear);
-			break;
-		#endif
 	}
 }
 
@@ -808,9 +780,6 @@ void Caveatron_Hardware::BUZZ_Init()
 		case '1':
 			BUZZpin=12;
 			break;
-		case '2':
-			BUZZpin=39;
-			break;
 	}
 	pinMode(BUZZpin, OUTPUT);
 }
@@ -836,10 +805,10 @@ void Caveatron_Hardware::SD_Init()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Write array of floating point values to EEPROM
-void Caveatron_Hardware::EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues) 
+boolean Caveatron_Hardware::EEPROM_writeFloatArray(uint16_t address, float values[], int numvalues) 
 {
 	byte aBytes[30];
-  
+    boolean ck = true;
 	union u_tag {
 		byte b[4];
 		float fval;
@@ -848,11 +817,14 @@ void Caveatron_Hardware::EEPROM_writeFloatArray(uint16_t address, float values[]
 		u.fval = values[i];
 		for(int j=0;j<4;j++) aBytes[j+i*4] = u.b[j];
 	}
-	#if defined(_SAM3XA_)
-		Write_AT24Cxx_Page(address, aBytes, numvalues*4);
-	#elif defined (__MK64FX512__) || defined(__MK66FX1M0__)
-		Write_EEPROM_Bytes(address, aBytes, numvalues*4);
-	#endif
+	Write_AT24Cxx_Page(address, aBytes, numvalues*4);
+	delay(10);
+	for (int i = 0; i < numvalues; i++) {
+		float f = EEPROM_readFloat(address + (4 * i));
+		if (f != values[i]) ck = false;
+		delay(5);
+	}
+	return ck;
 }
 
 // Read single floating point value from EEPROM
@@ -864,11 +836,7 @@ float Caveatron_Hardware::EEPROM_readFloat(uint16_t address)
 		byte b[4];
 		float fval;
 	} u;
-	#if defined(_SAM3XA_)
-		for(int i=0;i<4;i++) u.b[i] = Read_AT24Cxx_Byte(address+i);
-	#elif defined (__MK64FX512__) || defined(__MK66FX1M0__)
-		for(int i=0;i<4;i++) u.b[i] = Read_EEPROM_Byte(address+i);
-	#endif
+	for(int i=0;i<4;i++) u.b[i] = Read_AT24Cxx_Byte(address+i);
 	value = u.fval;
 	return value;
 }
@@ -877,11 +845,7 @@ float Caveatron_Hardware::EEPROM_readFloat(uint16_t address)
 String Caveatron_Hardware::EEPROM_readCharArray(uint16_t address, int numvalues)
 {
 	char b[11];
-	#if defined(_SAM3XA_)
-		for(int i=0;i<numvalues;i++) b[i] = Read_AT24Cxx_Byte(address+i);
-	#elif defined (__MK64FX512__) || defined(__MK66FX1M0__)
-		for(int i=0;i<numvalues;i++) b[i] = Read_EEPROM_Byte(address+i);
-	#endif
+	for(int i=0;i<numvalues;i++) b[i] = Read_AT24Cxx_Byte(address+i);
 	b[numvalues+1] = '\0';
 	String value(b);
 	return value;
@@ -911,20 +875,3 @@ int Caveatron_Hardware::Read_AT24Cxx_Byte(int iAddr) {
   if (Wire1.available()) rdata = Wire1.read();
   return rdata;
 }
-
-#if defined (__MK64FX512__) || defined(__MK66FX1M0__)  //for Teensy 3.5/3.6
-// Data page write to EEPROM
-void Caveatron_Hardware::Write_EEPROM_Bytes(int iAddr, byte* iData, int iLength)
-{
-  for (byte c = 0; c < iLength; c++) {
-    EEPROM.write(iAddr + c, iData[c]);
-    delay(10);
-  }
-}
-
-// Data page read from EEPROM
-int Caveatron_Hardware::Read_EEPROM_Byte(int iAddr) {
-  uint8_t rdata = EEPROM.read(iAddr);
-  return rdata;
-}
-#endif

@@ -8,6 +8,7 @@ void USBConnectMode() {
   char inChar;
   byte checksum;
   int i,j,k,numbytes,numpackets,lastnumbytes,packetcount,packetsize;
+  boolean done=false;
   char data[3610];
     
   InitSD_USBConnectMode();
@@ -148,7 +149,49 @@ void USBConnectMode() {
             }    
           }
           break;
-     
+
+        // Check for existance of Calibration File
+        case 'K':
+          if(sd.exists("Cal_new.imu")) Serial.print("(");
+          else Serial.print(")");
+          break;
+          
+        // Upload Calibration File to Caveatron
+        case 'U':
+          if (!theFile.open("Cal_new.imu", O_RDWR | O_CREAT | O_TRUNC)) {
+            myGLCD.print(" FILE ERROR ! ", CENTER, 170);
+            Serial.print("^");
+            break;
+          } else {
+            GetCurrentTime();
+            theFile.timestamp(T_CREATE, 2000+caveatron.RTCyear, caveatron.RTCmonth, caveatron.RTCday, caveatron.RTChour, caveatron.RTCminute, caveatron.RTCsecond);
+            myGLCD.print("Upload New IMU", CENTER, 170);
+            myGLCD.print("Calibration File", CENTER, 200);
+            Serial.print("&");
+          }
+          delay(100);
+          while (done==false) {
+            if (Serial.available()) {
+              data[0] = Serial.read();
+              if (data[0]==4) {
+                theFile.close();
+                myGLCD.print("UPLOAD COMPLETE", CENTER, 170);
+                myGLCD.print("                ", CENTER, 200);
+                done = true;
+              } else if (data[0]==21) {
+                theFile.close();
+                myGLCD.print("ERROR!", CENTER, 170);
+                myGLCD.print("File Upload Failed", CENTER, 200);
+                done = true;
+              } else {
+                theFile.write(data[0]);
+                Serial.print(data[0]);
+              }
+            }
+          }
+          delay(2000);
+          break;
+        
         //Check for Connection 
         case '?':
           delay(100);

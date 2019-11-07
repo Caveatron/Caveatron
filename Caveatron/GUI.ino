@@ -41,6 +41,13 @@ void drawInfoBar(String textInfoBar) {
   ctGUI.print(textInfoBar, 160, 464, caveatron.FONT_15, 3, CENTER_J, WHITE_STD, GRAY_075);
 }
 
+// Redraws main portion of screen (except Status Bar and Info Bar)
+void RedrawScreen() {
+  myGLCD.setColor(BLACK_STD);
+  myGLCD.fillRect(0,19,319,462);
+  ctGUI.redrawAllObjects();
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                           Keypad Functions
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -424,6 +431,70 @@ int index=0;
  sprintf(&s[index], "E%02.2d", exponent);
  return s;    
 } // ===== end double2s()
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                           Dialog Box Functions
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+boolean DialogBox(int numButtons, char msgStr1[], char msgStr2[], char msgStr3[], char buttonMsg1[], char buttonMsg2[], int d) {
+  boolean result, quit = false;
+  int x,y;
+  int bx;
+  if (numButtons==2) bx = 50;
+  else bx = 115;
+  myGLCD.setColor(127, 127, 0);
+  myGLCD.setBackColor(127, 127, 0);
+  myGLCD.fillRect(30, 90, 290, 304);
+  myGLCD.setColor(BLACK_STD);
+  myGLCD.drawRect(30, 90, 290, 304);
+  myGLCD.setColor(WHITE_STD);
+  ctGUI.print(msgStr1, 160, 110, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print(msgStr2, 160, 132, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print(msgStr3, 160, 154, caveatron.FONT_22, 2, CENTER_J);
+  if (numButtons > 0) {
+    myGLCD.setColor(BUTTON_STD);
+    myGLCD.fillRoundRect(bx,194,bx+90,284);
+    if (numButtons==2) myGLCD.fillRoundRect(180,194,270,284);
+    myGLCD.setColor(WHITE_STD);
+    myGLCD.drawRoundRect(bx,194,bx+90,284);
+    if (numButtons==2) myGLCD.drawRoundRect(180,194,270,284);
+    myGLCD.setColor(GRAY_025);
+    myGLCD.drawRoundRect(bx+1,195,bx+89,283);
+    if (numButtons==2) myGLCD.drawRoundRect(181,195,269,283);
+    ctGUI.print(buttonMsg1, bx+45, 229, caveatron.FONT_22, 2, CENTER_J, WHITE_STD, BUTTON_STD);
+    if (numButtons==2) ctGUI.print(buttonMsg2, 225, 229, caveatron.FONT_22, 2, CENTER_J, WHITE_STD, BUTTON_STD);
+    while (quit==false) {
+      if (myTouch.dataAvailable()) { 
+        myTouch.read();
+        x=myTouch.getX();
+        y=myTouch.getY();
+        if ((y>=212) && (y<=302)) {
+          myGLCD.setColor(RED_STD);
+          if ((x>=bx) && (x<=bx+90)) {
+            myGLCD.drawRoundRect(bx,194,bx+90,284);
+            myGLCD.drawRoundRect(bx+1,195,bx+89,283);
+            result = true;
+            quit = true;
+          } else if ((numButtons==2) && (x>=180) && (x<=270)) {
+            myGLCD.drawRoundRect(180,194,270,284);
+            myGLCD.drawRoundRect(181,195,269,283);
+            result = false;
+            quit = true;
+          }
+          delay(500);
+        }
+      }
+    }
+  }
+  else {
+    delay(d*1000);
+    result = true;
+  }
+  return result;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                           Error Box Functions

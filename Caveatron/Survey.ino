@@ -532,21 +532,23 @@ void LoadShots(int k) {
   char linebuffer[91];
 
   fileFlag = OpenSurveyFiles();
-  for (int i=0;i<9;i++) inFile.getline(linebuffer, 90, '\n');
-  while((inFile.eof() == false)&&(inFile.peek()>=0)&&(vectorCount<91)) { 
-    vector[vectorCount].filep = inFile.tellg();
-    if (inFile.peek()!=';') {
-      inFile >> st1_in >> st2_in >> di_in >> az_in >> in_in >> note_in;
-      vector[vectorCount].st1 = String(st1_in);
-      vector[vectorCount].st2 = String(st2_in);
-      vector[vectorCount].di = String(di_in, 2);
-      vector[vectorCount].az = String(az_in, 1);
-      vector[vectorCount].in = String(in_in, 1);
-      if ((note_in[0] == '#') && (note_in[1] == 'S')) vector[vectorCount].bk = true;
-      else vector[vectorCount].bk = false;
-      vectorCount++;
+  for (int i=0;i<8;i++) inFile.getline(linebuffer, 90, '\n');
+  while((inFile.eof() == false)&&(inFile.peek()>=0)&&(vectorCount<91)) {
+    if (sizeof(linebuffer)>0) { 
+      vector[vectorCount].filep = inFile.tellg();
+      if (inFile.peek()!=';') {
+        inFile >> st1_in >> st2_in >> di_in >> az_in >> in_in >> note_in;
+        vector[vectorCount].st1 = String(st1_in);
+        vector[vectorCount].st2 = String(st2_in);
+        vector[vectorCount].di = String(di_in, 2);
+        vector[vectorCount].az = String(az_in, 1);
+        vector[vectorCount].in = String(in_in, 1);
+        if ((note_in[0] == '#') && (note_in[1] == 'S')) vector[vectorCount].bk = true;
+        else vector[vectorCount].bk = false;
+        vectorCount++;
+      }
+      inFile.getline(linebuffer, 90, '\n');
     }
-    inFile.getline(linebuffer, 90, '\n');
   }
   inFile.close();
   numVectors = vectorCount;
@@ -597,48 +599,18 @@ void LoadShots(int k) {
 
 // Delete a shot from the Survey file on the SD card
 void DeleteShot() {
-  boolean quit = false;
-  int x,y;
+  String s;
+  char c[24];
   currentMode = modeEditSurvey;
-  myGLCD.setColor(127, 127, 0);
-  myGLCD.setBackColor(127, 127, 0);
-  myGLCD.fillRect(30, 90, 290, 270);
-  myGLCD.setColor(WHITE_STD);
-  ctGUI.print("Really delete", 160, 90, caveatron.FONT_22, 2, CENTER_J);
-  ctGUI.print("shot "+editVector.st1_e+" - "+editVector.st2_e+"?", 160, 122, caveatron.FONT_22, 2, CENTER_J);
-  myGLCD.setColor(BUTTON_STD);
-  myGLCD.fillRoundRect(180,160,270,250);
-  myGLCD.fillRoundRect(50,160,140,250);
-  myGLCD.setColor(WHITE_STD);
-  myGLCD.drawRoundRect(180,160,270,250);
-  myGLCD.drawRoundRect(50,160,140,250);
-  myGLCD.setColor(GRAY_025);
-  myGLCD.drawRoundRect(181,161,269,249);
-  myGLCD.drawRoundRect(51,161,139,249);
-  ctGUI.print("DELETE", 225, 195, caveatron.FONT_22, 2, CENTER_J, WHITE_STD, BUTTON_STD);
-  ctGUI.print("CANCEL", 95, 195, caveatron.FONT_22, 2, CENTER_J, WHITE_STD, BUTTON_STD);
-  while (quit==false) {
-    if (myTouch.dataAvailable()) { 
-      myTouch.read();
-      x=myTouch.getX();
-      y=myTouch.getY();
-      if ((y>=120) && (y<=210)) {
-        if ((x>=180) && (x<=270)) {
-          myGLCD.setColor(RED_STD);
-          myGLCD.drawRoundRect(180,160,270,250);
-          myGLCD.drawRoundRect(181,161,269,249);
-          delay(500);
-          fileFlag = OpenSurveyFiles();
-          theFile.rewind();
-          theFile.seekSet(readPosition);
-          theFile.print(";");
-          theFile.close();
-          quit = true;
-        } else if ((x>=50) && (x<=140)) {
-          quit = true;
-        }
-      }
-    }
+  s = "shot "+editVector.st1_e+" - "+editVector.st2_e+"?";
+  s.toCharArray(c, s.length()+1);
+  boolean result = DialogBox(2, "Really delete", c, "", "CANCEL", "DELETE", 0);
+  if (result==false) {
+    fileFlag = OpenSurveyFiles();
+    theFile.rewind();
+    theFile.seekSet(readPosition);
+    theFile.print(";");
+    theFile.close();
   }
   myGLCD.clrScr();
   currentMode = modeSurvey;
@@ -1031,6 +1003,7 @@ void ViewScan (uint32_t fp, const int nr, char stype, String stext) {
       myGLCD.setColor(YELLOW_STD);
       myGLCD.drawCircle(offsetText+10,397,10);
     }
+    delay(100);
   }
   ctGUI.clearAllObjects();
   myGLCD.clrScr();

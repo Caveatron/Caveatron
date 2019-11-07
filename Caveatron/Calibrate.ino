@@ -12,7 +12,7 @@ void CalibrateMenuSetup() {
   drawInfoBar("");
   btn1 = ctGUI.addButton(20,33,280,66,BUTTON_STD,"COMPASS CALIBRATION",caveatron.FONT_22,optVisible,1);
   btn2 = ctGUI.addButton(20,114,280,66,BUTTON_STD,"Check Azimuth Calibration",caveatron.FONT_22,optVisible,2);
-  btn3 = ctGUI.addButton(20,195,280,66,BUTTON_STD,"View Calibration Values",caveatron.FONT_22,optVisible,3);
+  btn3 = ctGUI.addButton(20,195,280,66,BUTTON_STD,"Load/Save Calibration",caveatron.FONT_22,optVisible,3);
   btn4 = ctGUI.addButton(20,276,280,66,BLACK_STD,"Advanced Calibration", "For Expert Use Only",caveatron.FONT_22,optVisible,4);
   ctGUI.addButton(20,357,280,84,BLUE_STD,"RETURN TO SETTINGS",caveatron.FONT_28,optVisible,5);
 }
@@ -25,8 +25,8 @@ void CalibrateMenuHandler(int URN) {
       case 2:                            //Check if Azimuth Calibration is Good
         CreateScreen(screenCheckCalibration);
         break;
-      case 3:                            //View Compass Calibration Parameters
-        ViewCalParameters();
+      case 3:                            //Load or Save IMU Calibration Parameters
+        CreateScreen(screenLoadSaveCalibration);
         break;
       case 4:                            //Advanced Calibration - for system setup and verification
         currentMode = modeRawLive;
@@ -326,7 +326,7 @@ void EigenCalibration() {
   }
 }
 
-// View Current Hard & Soft Iron User Calibration Parameters
+// View Current Magnetometer Calibration Parameters
 void ViewCalParameters() {
   ctGUI.makeObjectInvisible(btn1);
   ctGUI.makeObjectInvisible(btn2);
@@ -334,24 +334,36 @@ void ViewCalParameters() {
   ctGUI.makeObjectInvisible(btn4);
   myGLCD.setBackColor(BLACK_STD);
   myGLCD.setColor(YELLOW_STD);
-  ctGUI.print("Hard Iron Calibration", 160, 40, caveatron.FONT_22, 2, CENTER_J);
-  ctGUI.print("Soft Iron Calibration", 160, 150, caveatron.FONT_22, 2, CENTER_J);
-  ctGUI.print("X=", 80, 70, caveatron.FONT_19, 2, LEFT_J);
-  ctGUI.print("Y=", 80, 90, caveatron.FONT_19, 2, LEFT_J);
-  ctGUI.print("Z=", 80, 110, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.print("Hard Iron Calibration", 160, 30, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print("Soft Iron Calibration", 160, 140, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print("X=", 80, 60, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.print("Y=", 80, 80, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.print("Z=", 80, 100, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.print("Mag Alignment Calibration", 160, 250, caveatron.FONT_22, 2, CENTER_J);
+  ctGUI.print("(X, Y, Z, Rotation)", 160, 272, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.print("UP: ", 5, 302, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.print("DOWN: ", 5, 322, caveatron.FONT_19, 2, LEFT_J);
   myGLCD.setColor(WHITE_STD);
-  ctGUI.printNumF(hardIronCal[0], 4, 240, 70, caveatron.FONT_19, 2, RIGHT_J);
-  ctGUI.printNumF(hardIronCal[1], 4, 240, 90, caveatron.FONT_19, 2, RIGHT_J);
-  ctGUI.printNumF(hardIronCal[2], 4, 240, 110, caveatron.FONT_19, 2, RIGHT_J);
-  ctGUI.printNumF(softIronCal[0], 6, 5, 180, caveatron.FONT_19, 2, LEFT_J);
-  ctGUI.printNumF(softIronCal[1], 6, 160, 180, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.printNumF(softIronCal[2], 6, 315, 180, caveatron.FONT_19, 2, RIGHT_J);
-  ctGUI.printNumF(softIronCal[3], 6, 5, 200, caveatron.FONT_19, 2, LEFT_J);
-  ctGUI.printNumF(softIronCal[4], 6, 160, 200, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.printNumF(softIronCal[5], 6, 315, 200, caveatron.FONT_19, 2, RIGHT_J);
-  ctGUI.printNumF(softIronCal[6], 6, 5, 220, caveatron.FONT_19, 2, LEFT_J);
-  ctGUI.printNumF(softIronCal[7], 6, 160, 220, caveatron.FONT_19, 2, CENTER_J);
-  ctGUI.printNumF(softIronCal[8], 6, 315, 220, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(hardIronCal[0], 4, 240, 60, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(hardIronCal[1], 4, 240, 80, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(hardIronCal[2], 4, 240, 100, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(softIronCal[0], 6, 5, 170, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumF(softIronCal[1], 6, 160, 170, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.printNumF(softIronCal[2], 6, 315, 170, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(softIronCal[3], 6, 5, 190, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumF(softIronCal[4], 6, 160, 190, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.printNumF(softIronCal[5], 6, 315, 190, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumF(softIronCal[6], 6, 5, 210, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumF(softIronCal[7], 6, 160, 210, caveatron.FONT_19, 2, CENTER_J);
+  ctGUI.printNumF(softIronCal[8], 6, 315, 210, caveatron.FONT_19, 2, RIGHT_J);
+  ctGUI.printNumI(magAlignCal[0], 80, 302, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumI(magAlignCal[1], 140, 302, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumI(magAlignCal[2], 200, 302, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumF(magAlignCal[3], 1, 260, 302, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumI(magAlignCal[4], 80, 322, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumI(magAlignCal[5], 140, 322, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumI(magAlignCal[6], 200, 322, caveatron.FONT_19, 2, LEFT_J);
+  ctGUI.printNumF(magAlignCal[7], 1, 260, 322, caveatron.FONT_19, 2, LEFT_J);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -468,6 +480,76 @@ void CheckCalibration() {
   ctGUI.printNumF(normdeltaMax, 2, 240, 210, caveatron.FONT_28, 3, LEFT_J);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//            **** FUNCTIONS FOR LOADING AND SAVING IMU CALIBRATION TO SD CARD  **** //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+void LoadSaveCalibrationSetup() {
+  drawStatusBar("Load/Save IMU Cal");
+  drawInfoBar("");
+  btn1 = ctGUI.addButton(20,33,280,66,BUTTON_STD,"Save IMU Calibration",caveatron.FONT_22,optVisible,1);
+  btn2 = ctGUI.addButton(20,114,280,66,BUTTON_STD,"Load New IMU Calibration",caveatron.FONT_22,optVisible,2);
+  btn3 = ctGUI.addButton(20,195,280,66,BUTTON_STD,"Load Saved IMU Calibration",caveatron.FONT_22,optVisible,3);
+  btn4 = ctGUI.addButton(20,276,280,66,BUTTON_STD,"View IMU Calibration",caveatron.FONT_22,optVisible,4);
+  ctGUI.addButton(20,357,280,84,BLUE_STD,"RETURN TO CAL MENU",caveatron.FONT_28,optVisible,5);
+}
+
+void LoadSaveCalibrationHandler(int URN) {
+  int n;
+  switch (URN) {
+      case 1:                            //Save Current Calibration
+        if(DialogBox(2, "Save current IMU", "calibration to SD Card?", "(Overwrites existing save)", "SAVE", "CANCEL", 0)) {
+          RedrawScreen();
+          
+          if (!theFile.open("Cal_save.imu", O_RDWR | O_CREAT | O_TRUNC)) {
+            ErrorBox("Could Not Open", "IMU File", "", 99);
+          } else {
+            theFile.timestamp(T_CREATE, 2000+caveatron.RTCyear, caveatron.RTCmonth, caveatron.RTCday, caveatron.RTChour, caveatron.RTCminute, caveatron.RTCsecond);
+            SDWriteCalibrationValues(2);
+            theFile.close();
+            DialogBox(0, "", "", "IMU Calibration Saved", "", "", 2);
+
+          }
+        }
+        RedrawScreen();
+        break;
+      case 2:                            //Load New Calibration
+        if (SDLoadCalibrationValues(1) >= 0) {
+          myGLCD.setColor(127, 127, 0);
+          myGLCD.setBackColor(127, 127, 0);
+          myGLCD.fillRect(30, 324, 290, 413);
+          myGLCD.setColor(WHITE_STD);
+          ctGUI.print("VALUES TO LOAD", 160, 332, caveatron.FONT_19, 2, CENTER_J);
+          for (int i=0; i<3; i++) ctGUI.print(loadConfirmStr[i], 160, 358+i*15, caveatron.FONT_15, 2, CENTER_J);
+          if (DialogBox(2, "Load new calibration", "dated, for unit:", infoStr, "LOAD", "CANCEL", 0)) {
+            RedrawScreen();
+            if (SDLoadCalibrationValues(2) > 0) {
+              DialogBox(1, "New Calibration Loaded", "", "Must Reboot Caveatron", "OK", "", 2);
+            } else DialogBox(1, "ERROR!", "IMU Calibration", "Load Failed", "OK", "", 0);
+          }
+        }
+        RedrawScreen();
+        break;
+      case 3:                            //Load Previously Saved Calibration
+        if (SDLoadCalibrationValues(3) >= 0) {
+          if(DialogBox(2, "Load saved calibration", "dated, for unit:", infoStr, "LOAD", "CANCEL", 0)) {
+            RedrawScreen();
+            if (SDLoadCalibrationValues(4) > 0) {
+              DialogBox(1, "Previous Calibration", "Loaded", "Must Reboot Caveatron", "OK", "", 0);
+            } else DialogBox(1, "ERROR!", "IMU Calibration", "Load Failed", "OK", "", 0);
+          }
+        }
+        RedrawScreen();
+        break;
+      case 4:                            //View Compass Calibration Parameters
+        ViewCalParameters();
+        break;
+      case 5:                            //Return to Calibration Menu
+        CreateScreen(screenCalibrate);
+        break;
+  }
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -549,7 +631,7 @@ void RawRecordSetup() {
     while(true) {}
   }
   GetCurrentTime();
-  if (theFile.fileSize()==0) theFile.timestamp(T_CREATE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+  if (theFile.fileSize()==0) theFile.timestamp(T_CREATE, 2000+caveatron.RTCyear, caveatron.RTCmonth, caveatron.RTCday, caveatron.RTChour, caveatron.RTCminute, caveatron.RTCsecond);
   if (currentMode==modeCalRec1000) theFile.println("1000 RAW ACCELEROMETER & MAGNETOMETER READINGS");
   else theFile.println("CONTINUOUS RAW ACCELEROMETER & MAGNETOMETER READINGS");
   theFile.print("Date: "); theFile.print(dateYear); theFile.print("-"); theFile.print(dateMonth); theFile.print("-"); theFile.print(dateDay);
@@ -654,7 +736,7 @@ void CalShotsSetup() {
     sd.errorHalt("File opening failed");
     while(true) {}
   }
-  if (theFile.fileSize()==0) theFile.timestamp(T_CREATE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+  if (theFile.fileSize()==0) theFile.timestamp(T_CREATE, 2000+caveatron.RTCyear, caveatron.RTCmonth, caveatron.RTCday, caveatron.RTChour, caveatron.RTCminute, caveatron.RTCsecond);
   currentMode = modeCalShots;
   LoadCalShots();
 }
@@ -730,17 +812,13 @@ void LoadCalShots() {
     linecount++;
   }
   numlines = linecount;
-  Serial.println("Num lines");
-  Serial.println(numlines);
   linecount = 0;
   linelength = 1;
   theFile.rewind();
   while (linelength > 0) {
     linelength = theFile.fgets(bufin, 109);
     linecount++;
-    if ((numlines-linecount) <= 20) {
-      Serial.println("Line count");
-      Serial.println(linecount);
+    if ((numlines>2) && ((numlines-linecount) <= 20)) {
       linestring = String(bufin);
       endstr = linestring.indexOf("#");  
       ctGUI.print(linestring.substring(0,endstr-2), 160, 25+(i*18), caveatron.FONT_15, 2);
@@ -773,7 +851,6 @@ void LoadCalibrationParameters() {
   String strArr;
   char cArr[9];
   int addrMagAlignCal, addrMagHSCal, addrLidarOrientCal;
-  float magAlignCal[8];
   
   //Load Screen Calibration
   for (int i=0; i<3; i++) {

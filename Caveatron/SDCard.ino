@@ -134,6 +134,22 @@ void CreateSurveyFiles() {
     theFile.close();
   }
 
+  // Create IMU Calibration File
+  fileName = caveCode+dateMonth+dateDay+".imu";
+  char _fileNameI[sizeof(fileName)+1];
+  fileName.toCharArray(_fileNameI, sizeof(_fileNameI));
+  if (!theFile.open(_fileNameI, O_RDWR | O_CREAT)) {
+    ErrorBox("Could Not Create", "IMU File", "", 99);    
+  }
+  else {
+    theFile.println(";CAVEATRON IMU CALIBRATION PARAMETERS FILE");
+    theFile.println(";"+caveName); theFile.println();
+    SDWriteCalibrationValues(1);
+    theFile.timestamp(T_CREATE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+    theFile.timestamp(T_WRITE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
+    theFile.close();
+  }
+  
   // Create Log File
   fileName = caveCode+dateMonth+dateDay+".log";
   char _fileNameZ[sizeof(fileName)+1];
@@ -147,7 +163,6 @@ void CreateSurveyFiles() {
     theFile.println(";"+caveName);
     theFile.println(";Survey Date: "+dateMonth+'/'+dateDay+"/20"+dateYear);
     theFile.println();
-    SDWriteCalibrationValues();
     theFile.timestamp(T_CREATE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
     theFile.timestamp(T_WRITE, 2000+surveyYear, surveyMonth, surveyDay, surveyHour, surveyMinute, surveySecond);
     theFile.close();
@@ -288,43 +303,6 @@ void GetLastScanNum() {
   sta.lastSplayNum = 0;
 }
 
-void SDWriteCalibrationValues() {
-  theFile.println(";Accelerometer Calibration");
-  SDWriteCalibrationValueSet(ADDR_ACC_CAL,3,4);
-  theFile.println(";Magnetometer Hard & Soft Iron Calibration - No LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_NOLID,3,4);
-  theFile.println(";Magnetometer Alignment Calibration - No LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_NOLID,4,1);
-  theFile.println(";Magnetometer Hard & Soft Iron Calibration - XV LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDXV,3,4);
-  theFile.println(";Magnetometer Alignment Calibration - XV LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDXV,4,1);
-  theFile.println(";Magnetometer Hard & Soft Iron Calibration - SWEEP LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDSW,3,4);
-  theFile.println(";Magnetometer Alignment Calibration - SWEEP LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDSW,4,1);
-  theFile.println(";Magnetometer Hard & Soft Iron Calibration - RP LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDRP,3,4);
-  theFile.println(";Magnetometer Alignment Calibration - RP LIDAR");
-  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDRP,4,1);
-  theFile.println();
-}
-
-
-void SDWriteCalibrationValueSet(uint32_t addr, int xNum, int yNum) {
-  float f;
-  for(int j=0;j<yNum;j++) {
-    for(int i=0;i<xNum;i++) {
-      if ((i==0)&&(j==0)) theFile.print(">");
-      else theFile.print(",");
-      f = caveatron.EEPROM_readFloat((addr+(4*i))+(0x20*j));
-      if (f==0) theFile.print(0.0);
-      else if (abs(f) < 1) theFile.print(double2s(f, 5));
-      else theFile.print(f, 3);
-    }
-  }  
-  theFile.println();  
-}
 
 // Display SD card information
 void SDCardInfo() {
@@ -389,7 +367,190 @@ void SDCardInfo() {
   
   ctGUI.print("Number of Files: ", 20, 180, caveatron.FONT_19, 2, LEFT_J);
   ctGUI.printNumI(numFiles, 300, 180, caveatron.FONT_19, 2, RIGHT_J);
-
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                         Functions for reading/writing calibration files to/from SD Card
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+//Write Calibration values to SD card (full user save or partial survey file save)
+void SDWriteCalibrationValues(int writeMode) {
+  char checkArr[10];
+  if (writeMode==2) {
+    theFile.println(";CAVEATRON IMU CALIBRATION PARAMETERS FILE");
+    theFile.println(";Full Parameter User Save"); theFile.println();
+  }
+  theFile.println(";Date & Time"); theFile.println("#D");
+  theFile.println("20"+dateYear+"-"+dateMonth+"-"+dateDay+" "+timeHour+":"+timeMinute+":"+timeSecond); theFile.println();
+  theFile.println(";Serial Number"); theFile.println("#N");
+  theFile.println(caveatron.serialNumber); theFile.println();
+  theFile.println(";Accelerometer Calibration"); theFile.println("#A");
+  SDWriteCalibrationValueSet(ADDR_ACC_CAL,3,4,5);
+  
+  theFile.println(";Magnetometer Alignment Calibration - No LIDAR"); theFile.println("#L0");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_NOLID,4,2,1);
+  theFile.println(";Magnetometer Alignment Calibration - XV LIDAR"); theFile.println("#L1");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDXV,4,2,1);
+  theFile.println(";Magnetometer Alignment Calibration - SWEEP LIDAR"); theFile.println("#L2");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDSW,4,2,1);
+  theFile.println(";Magnetometer Alignment Calibration - RP LIDAR"); theFile.println("#L3");
+  SDWriteCalibrationValueSet(ADDR_MAG_ALIGNCAL_LIDRP,4,2,1);
+  
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - No LIDAR"); theFile.println("#M0");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_NOLID,3,4,5);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - XV LIDAR"); theFile.println("#M1");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDXV,3,4,5);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - SWEEP LIDAR"); theFile.println("#M2");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDSW,3,4,5);
+  theFile.println(";Magnetometer Hard & Soft Iron Calibration - RP LIDAR"); theFile.println("#M3");
+  SDWriteCalibrationValueSet(ADDR_MAG_HSCAL_LIDRP,3,4,5);
+
+  if (writeMode==2) {
+    theFile.println(";LIDAR Orientation Angle - XV LIDAR"); theFile.println("#O1");
+    SDWriteCalibrationValueSet(ADDR_LIDXV_ORIENTCAL,1,1,1);
+    theFile.println(";LIDAR Orientation Angle - SWEEP LIDAR"); theFile.println("#O2");
+    SDWriteCalibrationValueSet(ADDR_LIDSW_ORIENTCAL,1,1,1);
+    theFile.println(";LIDAR Orientation Angle - RP LIDAR"); theFile.println("#O3");
+    SDWriteCalibrationValueSet(ADDR_LIDRP_ORIENTCAL,1,1,1);
+    theFile.println(";LRF Range Offset"); theFile.println("#R");
+    SDWriteCalibrationValueSet(ADDR_LRF_RANGECAL,1,1,1);
+    theFile.println(";Screen Calibration"); theFile.println("#S");
+    for (int i=0; i<3; i++) {
+      String arr = caveatron.EEPROM_readCharArray(ADDR_SCREEN_CAL+(i*0x20), 10);
+      arr.toCharArray(checkArr, 10);
+      theFile.print("0x"+String(checkArr));
+      if (i<2) theFile.print(",");
+    }
+    theFile.println(); theFile.println();
+    theFile.println(";Hardware Code"); theFile.println("#H");
+    theFile.println(hardwareCode);
+  }
+}
+
+//Reads an array from the EEPROM and writes to the SD card
+void SDWriteCalibrationValueSet(uint32_t addr, int xNum, int yNum, int prec) {
+  float f;
+  for(int j=0;j<yNum;j++) {
+    for(int i=0;i<xNum;i++) {
+      if ((i!=0)) theFile.print(",");
+      f = caveatron.EEPROM_readFloat((addr+(4*i))+(0x20*j));
+      if (f==0) theFile.print("0.0");
+      else if (abs(f) < 1) theFile.print(double2s(f, prec));
+      else theFile.print(f, prec);
+    }
+    theFile.println();
+  }  
+  theFile.println();  
+}
+
+//Reads calibration values from SD card (from a new IMU file or a saved IMU file)
+int SDLoadCalibrationValues(int readMode) {
+  char linebuffer[61];
+  char cp, cc, tp[4], d[11], n[6];
+  float v[4], f;
+  boolean dataValid=true;
+  for (int i=0; i<3; i++) loadConfirmStr[i]="";
+  if ((readMode==1)||(readMode==2)) inFile.open("Cal_new.imu", ios::in);
+  else if ((readMode==3)||(readMode==4)) inFile.open("Cal_save.imu", ios::in);
+  if(inFile.is_open()==false) {
+    ErrorBox("Could Not Open", "Calibration File", "", 99);
+    return(-1);
+  }
+  while((inFile.eof() == false)&&(inFile.peek()>=0)) { 
+    cp = inFile.peek();
+    if (cp=='#') {
+      inFile >> tp >> ws;
+      switch (tp[1]) {
+        case 'D':
+          inFile.get(d, 11, ' ');
+          break;
+        case 'N':
+          inFile.get(n, 6, '\n');
+          break;
+        case 'A':
+          loadConfirmStr[0] = "Accelerometer";
+          for (int i=0; i<4; i++) {
+            inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> ws;
+            if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_ACC_CAL+(i*0x20), v, 3);
+          }
+          break;
+        case 'L':
+          if (loadConfirmStr[1].length()==0) loadConfirmStr[1] += "Mag Align:  ";
+          switch (tp[2]) {
+            case '0':
+              loadConfirmStr[1] += "NL  ";
+              for (int i=0; i<2; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> cc >> v[3] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_NOLID+(i*0x20), v, 4);
+              }
+              break;
+            case '1':
+              loadConfirmStr[1] += "XV  ";
+              for (int i=0; i<2; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> cc >> v[3] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDXV+(i*0x20), v, 4);
+              }
+              break;
+            case '2':
+              loadConfirmStr[1] += "SW  ";
+              for (int i=0; i<2; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> cc >> v[3] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDSW+(i*0x20), v, 4);
+              }
+              break;
+            case '3':
+              loadConfirmStr[1] += "RP  ";
+              for (int i=0; i<2; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> cc >> v[3] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_ALIGNCAL_LIDRP+(i*0x20), v, 4);
+              }
+              break;
+          }
+          break;
+        case 'M':
+          if (loadConfirmStr[2].length()==0) loadConfirmStr[2] = "Mag H&S:  ";
+          switch (tp[2]) {
+            case '0':
+              loadConfirmStr[2] += "NL  ";
+              for (int i=0; i<4; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_HSCAL_NOLID+(i*0x20), v, 3);
+              }
+              break;
+            case '1':
+              loadConfirmStr[2] += "XV  ";
+              for (int i=0; i<4; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_HSCAL_LIDXV+(i*0x20), v, 3);
+              }
+              break;
+            case '2':
+              loadConfirmStr[2] += "SW  ";
+              for (int i=0; i<4; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_HSCAL_LIDSW+(i*0x20), v, 3);
+              }
+              break;
+            case '3':
+              loadConfirmStr[2] += "RP  ";
+              for (int i=0; i<4; i++) {
+                inFile >> v[0] >> cc >> v[1] >> cc >> v[2] >> ws;
+                if ((readMode==2)||(readMode==4)) dataValid &= caveatron.EEPROM_writeFloatArray(ADDR_MAG_HSCAL_LIDRP+(i*0x20), v, 3);
+              }
+              break;
+          }
+          break;
+        default:
+          inFile.getline(linebuffer, 60, '\n');
+          break;
+      }
+    }
+    inFile.getline(linebuffer, 60, '\n');
+  }
+  inFile.close();
+  snprintf(infoStr, sizeof(infoStr)+1, "%s  %s", d, n);
+  return dataValid;
+}
 

@@ -6,7 +6,7 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 ### Version 1.40
 CRITICAL NOTE! You must update the Caveatron_Hardware Library to v1.4
 
-Changes since version 1.31
+Changes since version 1.31:
 - When creating a new survey, calibration parameters are now stored in a .IMU file of the same name as the survey files.
 - Added ability to load and save calibration parameters from/to a file on the SD card. Use of Caveatron_Downloader/Uploader sketch is no longer required.
 - Added compatibility with new version of Caveatron Connect (v1.1) to provide for transfer of .IMU calibration files from a PC to the Caveatron SD card.
@@ -19,7 +19,7 @@ Changes since version 1.31
 ### Version 1.31
 CRITICAL NOTE! If you updated the Caveatron_Hardware library to v1.3, replace it with v1.31. If not, no change is required.
 
-Changes since version 1.30
+Changes since version 1.30:
 - Improvements to ensure data is written to SD card in the event of a system freeze.
 - Fixed bug that can potentially cause a system freeze when ending a scan with the SWEEP LIDAR (requires updating SWEEP library to 2019-03-02 version).
 - Changes to sequence of events when LIDAR scan ended to ensure log file is properly updated in the event of a system freeze.

@@ -24,6 +24,7 @@ In the Rev A version, many people had difficulty with compiling the code in term
 - Bill of Materials
 - Setup & Calibration Instructions
 - Excel Calculators for Initial Calibration
+
 Will include assembly instructions once they are prepared.
 
 ### Electronics

@@ -22,7 +22,9 @@ In the Rev A version, many people had difficulty with compiling the code in term
 
 ### Documentation
 - Bill of Materials
-Will include assembly notes once they are prepared.
+- Setup & Calibration Instructions
+- Excel Calculators for Initial Calibration
+Will include assembly instructions once they are prepared.
 
 ### Electronics
 - Schematic diagram
@@ -30,12 +32,12 @@ Will include assembly notes once they are prepared.
 
 ### Mechanical
 - STL files for all 3D printed parts
-Will include printing notes and drawings for the LIDAR and LRF windows (which must be custom cut) once they are prepared.
+- Drawings of the LRF and LIDAR windows
 
 ### Software
-- Pre-compiled HEX file of the Caveatron software
-Will include instructions for loading the code once they are prepared.
-
+- Pre-compiled HEX files of the Caveatron software
+- Pre-compiled HEX file of the Caveatron_Setup software and fonts and graphics files for loading to SPI flash
+- Instructions for loading the HEX files.
 
 ## Software Release Notes
 ### Version 2.01

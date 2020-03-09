@@ -41,6 +41,10 @@ Will include assembly instructions once they are prepared.
 - Instructions for loading the HEX files.
 
 ## Software Release Notes
+### Version 2.02
+- Added ability to upload LIDAR Window Corner, Window Distortion, LIDAR orientation, and LRF offset calibration parameters via an IMU file.
+- A fix to the RPLIDAR timeout and a new capability to display multiline wrapped text.
+
 ### Version 2.01
 - Added LIDAR window distortion calibration parameters to IMU file.
 - Added absolute scaling values for IMU sensors.

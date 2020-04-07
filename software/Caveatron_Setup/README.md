@@ -5,9 +5,9 @@ This firmware is used to perform initial setup of the Caveatron after assembly. 
 ## Files
 
 You must select the version that is compatible with your display for it to work correctly
-- CTE35IPS_GHL - *Most builds will use this version* - This version is for the Coldtears Electronics 3.5" IPS touchscreen with the GHL Font IC.
+- CTE35IPS_Normal - *Most builds will use this version* - This version is for Coldtears Electronics 3.5" IPS touchscreens with non-inverted colors. This appears to include newer models that use the UTFT_GHL library as well as older models that used the a previous library. If the colors are inverted using this version (black text on a white background) then use the "Inverted" version.
+- CTE35IPS_Inverted - This version is for use with certain Coldtears Electronics 3.5" IPS touchscreens with the UTFT_GHL library that produce inverted colors. Use this version to correct the colors back to normal.
 - CTE40 - This version is for the Coldtears Electronics 4.0" touchscreen.
-- CTE35IPS_CTE - - This version is for the older Coldtears Electronics 3.5" IPS touchscreen with the CTE Font IC (in general this part is no longer available but may still be found in some places).
 
 The cvfont32.bin file contains the Caveatron fonts and graphics and must be loaded onto the SPI flash IC using the Caveatron_Setup firmware. It needs to be copied to a microSD card (32GB or smaller) that is inserted into the Teensy processor microSD slot in order for it to be loaded to the SPI flash.
 

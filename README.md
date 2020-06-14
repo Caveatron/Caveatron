@@ -41,6 +41,13 @@ Will include assembly instructions once they are prepared.
 - Instructions for loading the HEX files.
 
 ## Software Release Notes
+### Version 2.03
+- Overhauled code related to LRF operation in Passage Mode to improve performance and stability
+- Fixed multiple problems that prevented UT390v2 and JRT LRF modules from working properly in Passage Mode
+- Fixed bug in LIDAR error handling
+- Fixed bug in calibration view
+- Fixed GUI for "no battery gauge" hardware setting
+
 ### Version 2.02
 - Added ability to upload LIDAR Window Corner, Window Distortion, LIDAR orientation, and LRF offset calibration parameters via an IMU file.
 - A fix to the RPLIDAR timeout and a new capability to display multiline wrapped text.

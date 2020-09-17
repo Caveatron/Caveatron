@@ -41,6 +41,12 @@ Will include assembly instructions once they are prepared.
 - Instructions for loading the HEX files.
 
 ## Software Release Notes
+### Version 2.04
+- Fixed bug that caused a freeze when a Splay shot failed
+- Fixed bug that caused an error when shot is deleted
+- Changed some wording in GUI
+- Changed shot delete to remove shot line from survey file instead of just marking it for removal
+
 ### Version 2.03
 - Overhauled code related to LRF operation in Passage Mode to improve performance and stability
 - Fixed multiple problems that prevented UT390v2 and JRT LRF modules from working properly in Passage Mode

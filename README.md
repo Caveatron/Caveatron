@@ -41,6 +41,11 @@ Will include assembly instructions once they are prepared.
 - Instructions for loading the HEX files.
 
 ## Software Release Notes
+### Version 2.05
+- Added support for BuyDisplay 3.5" 480x320 resistive touchscreen LCD module (Hardware code display=4)
+- Fixed bug so that the LRF range calibration is applied in Shot and Manual modes
+- Fixed bug with Manual Mode range toggle switch not turning off
+
 ### Version 2.04
 - Fixed bug that caused a freeze when a Splay shot failed
 - Fixed bug that caused an error when shot is deleted

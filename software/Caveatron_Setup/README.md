@@ -4,8 +4,9 @@ This firmware is used to perform initial setup of the Caveatron after assembly. 
 
 ## Files
 
-You must select the version that is compatible with your display for it to work correctly
-- CTE35IPS_Normal - *Most builds will use this version* - This version is for Coldtears Electronics 3.5" IPS touchscreens with non-inverted colors. This appears to include newer models that use the UTFT_GHL library as well as older models that used the a previous library. If the colors are inverted using this version (black text on a white background) then use the "Inverted" version.
+You must select the version that is compatible with your display for it to work correctly. At this time, the PCB and enclosure design only supports the CTE35 models, but these are being updated. The CTE35IPS and CTE40 displays no longer appear to be available.
+- ILI9488_16 - *This is the new standard display model going forward* This is the version for the BuyDisplay 3.5" 480x320 display with the resistive touchscreen, 16-bit, and 3.3V options. 
+- CTE35IPS_Normal - This version is for Coldtears Electronics 3.5" IPS touchscreens with non-inverted colors. This appears to include newer models that use the UTFT_GHL library as well as older models that used the a previous library. If the colors are inverted using this version (black text on a white background) then use the "Inverted" version.
 - CTE35IPS_Inverted - This version is for use with certain Coldtears Electronics 3.5" IPS touchscreens with the UTFT_GHL library that produce inverted colors. Use this version to correct the colors back to normal.
 - CTE40 - This version is for the Coldtears Electronics 4.0" touchscreen.
 

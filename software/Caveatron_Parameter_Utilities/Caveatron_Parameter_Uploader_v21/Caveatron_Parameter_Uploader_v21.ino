@@ -1,8 +1,8 @@
 /*****************************************************************/
 //             Caveatron Parameter Uploader                      //
-//                       Version 2.0                             //
+//                       Version 2.1                             //
 /*****************************************************************/
-// Joe Mitchell, 2019-12-15
+// Joe Mitchell, 2020-12-02
 // Used to Upload Calibration Parameters to the Caveatron EEPROM
 // Fill in your calibration parameters in the "Calibration_Parameters" tab
 
@@ -35,6 +35,7 @@ boolean loadLidarWindowCorrection = 0;   // LIDAR Rotation Orientation, 1 float
 boolean loadLRFRangeCal = 0;        // LRF Distance, 1 float
 
 boolean initalizePrefs = 0;   //Set preference values to "1"
+boolean loadFileName = 0;   //Used to set current file name
 
 //*******************************
 
@@ -58,6 +59,8 @@ boolean initalizePrefs = 0;   //Set preference values to "1"
 #define ADDR_LRFRATE_PREF 0x905
 #define ADDR_SHUTDOWN_PREF  0x910
 
+#define ADDR_FILENAME   0xF00     //Uses 34 bytes
+
 extern char serialNumber[];
 extern char hardwareCode[];
 extern char screenCal[3][11];
@@ -70,6 +73,7 @@ extern float lidarOrientCal[1];
 extern float LRFRangeCal[1];
 extern int8_t lidarWindowCorrectSettings[2];
 extern int8_t lidarWindowCorrection[720];
+extern char fileName[];
 
 
 void setup() {
@@ -77,7 +81,7 @@ void setup() {
   Serial.begin(250000);
 
   //Init GUI
-  myGLCD.invert_colors = true;
+  //myGLCD.invert_colors = true;
   myGLCD.InitLCD(PORTRAIT);
   myGLCD.clrScr();
   myGLCD.setBackColor(0, 0, 0);
@@ -230,6 +234,18 @@ void setup() {
     }
     y=y+20;
   }
+  if (loadFileName) {
+    UploadFileName();
+    delay(100);
+    if (CheckFileName()) {
+      myGLCD.setColor(0, 255, 0);
+      myGLCD.print("File Name Loaded", CENTER, y);
+    } else {
+      myGLCD.setColor(255, 0, 0);
+      myGLCD.print("File Name Failed", CENTER, y);
+    }
+    y=y+20;
+  }
   myGLCD.setColor(255, 255, 255);
   myGLCD.print("DONE", CENTER, y);
   
@@ -312,6 +328,11 @@ void InitializePrefs() {
   Write_EEPROM_Bytes(ADDR_LRFRATE_PREF, b, 1);
   Write_EEPROM_Bytes(ADDR_SHUTDOWN_PREF, b, 1);
 }
+
+void UploadFileName() {
+  EEPROM_writeCharArray(ADDR_FILENAME, fileName, 33);
+}
+
 
 
 boolean CheckSerialNumber() {
@@ -450,6 +471,13 @@ boolean CheckPrefs() {
   dByte = EEPROM.read(ADDR_SHUTDOWN_PREF);
   if ((aByte!=1) || (bByte!=1) || (cByte!=1) || (dByte!=1)) return 0; 
   else return 1;
+}
+
+boolean CheckFileName() {
+  String arr;
+  arr = EEPROM_readCharArray(ADDR_FILENAME, 33);
+  if (arr!=fileName) return 0;
+  return 1;
 }
 
 

@@ -1,8 +1,8 @@
 /*****************************************************************/
 //             Caveatron Parameter Downloader                    //
-//                       Version 2.0                             //
+//                       Version 2.1                             //
 /*****************************************************************/
-// Joe Mitchell, 2019-12-15
+// Joe Mitchell, 2020-11-25
 // Used to download calibration parameters from the Caveatron EEPROM
 // After loading, open a Serial Monitor window at 250000 baud to view the parameters
 
@@ -28,6 +28,9 @@
 #define ADDR_LRFRATE_PREF 0x905
 #define ADDR_SHUTDOWN_PREF  0x910
 
+// File Name
+#define ADDR_FILENAME  0xF00
+
 
 void setup() {
   //Init Serial
@@ -49,6 +52,7 @@ void setup() {
   DownloadLidarOrientCal();
   DownloadLRFRangeCal();
   DownloadWindowCorrections();
+  DownloadFileName();
 }
 
 void loop() {
@@ -203,6 +207,13 @@ void DownloadWindowCorrections() {
   Serial.println();
 }
 
+boolean DownloadFileName() {
+  String arr;
+  arr = EEPROM_readCharArray(ADDR_FILENAME, 35);
+  Serial.println("File Name");
+  Serial.println(arr);
+  Serial.println();
+}
 
 float EEPROM_readFloat(uint16_t address)
 {
@@ -218,9 +229,9 @@ float EEPROM_readFloat(uint16_t address)
 
 String EEPROM_readCharArray(uint16_t address, int numvalues)
 {
-  char b[13];
+  char b[35];
   for(int i=0;i<numvalues;i++) b[i] = Read_EEPROM_Byte(address+i);
-  b[numvalues+1] = '\0';
+  //b[numvalues+1] = '\0';
   String value(b);
   return value;
 }

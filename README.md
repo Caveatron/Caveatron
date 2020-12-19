@@ -41,6 +41,17 @@ Will include assembly instructions once they are prepared.
 - Instructions for loading the HEX files.
 
 ## Software Release Notes
+### Version 2.10
+WARNING! You will need to create a new survey after this update since the file storage format has changed! No existing files on the card are changed but the current survey will not be accessible by the Caveatron.
+- New file storage configuration. All files for a survey are now stored together in their own directory name with the cave name and date. Settings for a survey are now stored in a .dat file in each folder (settings.txt is no longer used).
+- Added capability to reopen and continue previous surveys (not backward compatible with surveys taken before 2.10).
+- Added note entry capability. General survey info can be entered during new survey setup such as team member names, etc. This can also be edited or added later. Notes can also be entered/edited for each shot, such as whether there are interesting features or if it ties into an existing station.
+- Added shot editing ability including editing station names and changing front-sights to back-sights and vise versa.
+- Shot editing, deleting, and adding shot note are done through a new contextual menu in the View/Edit Shots page.
+- Added more error checks when opening files.
+- Added support for Pololu MinIMU-9 v5 and AltIMU-10 v5 compass modules. 
+- Fixed bug so that multiple files/folders can now be copied together to/from a PC without corruption.
+
 ### Version 2.05
 - Added support for BuyDisplay 3.5" 480x320 resistive touchscreen LCD module (Hardware code display=4)
 - Fixed bug so that the LRF range calibration is applied in Shot and Manual modes

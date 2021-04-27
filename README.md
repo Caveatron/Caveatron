@@ -35,7 +35,7 @@ In the Rev A version, many people had difficulty with compiling the code in term
 - Drawings of the LRF and LIDAR windows
 
 ### Calibration
-Info and calculators can be found in the top level Calibration directory
+Info and calculators can be found at https://github.com/Caveatron/Calibration
 
 ### Software
-Software can be found in the top level Software directory
+Software can be found at https://github.com/Caveatron/Software

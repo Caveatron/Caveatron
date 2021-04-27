@@ -14,7 +14,7 @@ The Caveatron has been redesigned with numerous new features:
 - Fully 3D printed enclosure design that is slightly smaller and lighter
 - Much easier assembly with custom printed circuit board
 
-The previous version (Rev A) information is all still available and can now be found in the rev-A_version directory.
+The previous version (Rev A) information is all still available and can now be found in the legacy_material_rev-A directory.
 
 In the Rev A version, many people had difficulty with compiling the code in terms of getting all the libraries to work together and getting all the settings right. With the Teensy, it is relatively easy to load a pre-compiled HEX file, avoiding all the software headaches. For now I am just going to provide the HEX file instead of all the code to simplify things, since the code has gotten even more complex in the new version and I am no longer using the Arduino IDE. If you want to work on the code, please contact me directly.
 

@@ -5,20 +5,27 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 ## Key Features
 
 - Survey and 3D scan caves
-- 12 m LIDAR range at up to 8000 pts/sec
+- 12 m or 30 m LIDAR range at up to 32000 pts/sec
 - Laser rangefinder up to 40 m
 - Integrated intertial measurement unit including digital compass, inclinometer, and gyroscope
 - Position estimation during scanning
-- Fast Teensy 3.6 processor
+- Fast Teensy processor
 - File transfer to PC over USB
 - Water/dust resistant 3D printed enclosure
 - Custom printed circuit board
 
-The previous version (Rev A) information is all still available and can now be found in the legacy_material_rev-A directory.
+## What's New (2022-09-21)
 
+The newest version of the Caveatron (Rev C) is in development. This version uses the faster Teensy 4.1 processor and has several enhancements including ability to use the 30m RPLIDAR S2 or 12 RPLIDAR A1M8, a new magnetometer module for much improved compass accuracy and reliability, a capacitive touchscreen, faster battery charging, and a smaller size.
+Files for the Rev C PCB have been posted along with a preliminary Bill of Materials
+The Rev B and Rev C files have been separated into their own directories
+
+Caveatron Rev B is based on the Teensy 3.6 processor and is currently the most mature and complete design until Rev C is complete.
+
+The original, Arduino Due-based version (Rev A) information is all still available and can now be found in the legacy_material_rev-A directory.
 In the Rev A version, many people had difficulty with compiling the code in terms of getting all the libraries to work together and getting all the settings right. With the Teensy, it is relatively easy to load a pre-compiled HEX file, avoiding all the software headaches. For now I am just going to provide the HEX file instead of all the code to simplify things, since the code has gotten even more complex in the new version and I am no longer using the Arduino IDE. If you want to work on the code, please contact me directly.
 
-## Summary of Caveatron Directory Contents
+## Summary of Caveatron Directory Contents for Rev B (and planned for Rev C)
 
 ### Documentation
 - Bill of Materials

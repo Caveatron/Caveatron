@@ -14,13 +14,12 @@ The Caveatron is a unique compact, handheld, electronic device for mapping caves
 - Water/dust resistant 3D printed enclosure
 - Custom printed circuit board
 
-## What's New (2022-09-21)
+## What's New (2024-05-03)
 
-The newest version of the Caveatron (Rev C) is in development. This version uses the faster Teensy 4.1 processor and has several enhancements including ability to use the 30m RPLIDAR S2 or 12 RPLIDAR A1M8, a new magnetometer module for much improved compass accuracy and reliability, a capacitive touchscreen, faster battery charging, and a smaller size.
-Files for the Rev C PCB have been posted along with a preliminary Bill of Materials
-The Rev B and Rev C files have been separated into their own directories
+Rev C is the current and preferred version and is the only one in active development. This version uses the faster Teensy 4.1 processor and has several enhancements including ability to use the 30m RPLIDAR S2 or 12 RPLIDAR A1M8, a new magnetometer module for much improved compass accuracy and reliability, a capacitive touchscreen, faster battery charging, and a smaller size.
+New revisions of the Rev C board (C.3 and C.4) have been posted along with an updated bill of materials. The Rev C assembly documentation has not yet been updated for the new PCBs but is not significantly different.
 
-Caveatron Rev B is based on the Teensy 3.6 processor and is currently the most mature and complete design until Rev C is complete.
+Rev B is based on the older Teensy 3.6 processor and is now deprecated and some components may no longer be available.
 
 The original, Arduino Due-based version (Rev A) information is all still available and can now be found in the legacy_material_rev-A directory.
 In the Rev A version, many people had difficulty with compiling the code in terms of getting all the libraries to work together and getting all the settings right. With the Teensy, it is relatively easy to load a pre-compiled HEX file, avoiding all the software headaches. For now I am just going to provide the HEX file instead of all the code to simplify things, since the code has gotten even more complex in the new version and I am no longer using the Arduino IDE. If you want to work on the code, please contact me directly.

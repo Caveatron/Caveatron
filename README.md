@@ -24,7 +24,7 @@ Rev B is based on the older Teensy 3.6 processor and is now deprecated and some 
 The original, Arduino Due-based version (Rev A) information is all still available and can now be found in the legacy_material_rev-A directory.
 In the Rev A version, many people had difficulty with compiling the code in terms of getting all the libraries to work together and getting all the settings right. With the Teensy, it is relatively easy to load a pre-compiled HEX file, avoiding all the software headaches. For now I am just going to provide the HEX file instead of all the code to simplify things, since the code has gotten even more complex in the new version and I am no longer using the Arduino IDE. If you want to work on the code, please contact me directly.
 
-## Summary of Caveatron Directory Contents for Rev B (and planned for Rev C)
+## Summary of Caveatron Directory Contents for each Revision
 
 ### Documentation
 - Bill of Materials
@@ -32,13 +32,16 @@ In the Rev A version, many people had difficulty with compiling the code in term
 - Wire Harness Assembly Instructions
 - 3D Printed Parts Description
 
-### Electronics
+### PCB
 - Schematic diagram
+- KiCad files
 - PCB gerber files
 
 ### Mechanical
 - STL files for all 3D printed parts
-- Drawings of the LRF and LIDAR windows
+- STEP files for all 3D printed parts
+
+## These items can be found in other folders:
 
 ### Calibration
 Info and calculators can be found at https://github.com/Caveatron/Calibration
